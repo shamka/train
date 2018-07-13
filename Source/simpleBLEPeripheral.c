@@ -669,12 +669,12 @@ static void trainProfileChangeCB( uint8 paramID )
   case U_DEV_NAME:
     osal_snv_write(SH_SNV_RESP,scanRspData[0]+1,scanRspData);
     if(scanRspData[0]>0){
-      //GAPRole_SetParameter( GAPROLE_SCAN_RSP_DATA, 1+scanRspData[0], (void*)scanRspData );
+      GAPRole_SetParameter( GAPROLE_SCAN_RSP_DATA, 1+scanRspData[0], (void*)scanRspData );
     }
     else{
-      //GAPRole_SetParameter( GAPROLE_SCAN_RSP_DATA, 0, (void*)scanRspData );
+      GAPRole_SetParameter( GAPROLE_SCAN_RSP_DATA, 0, (void*)scanRspData );
     }
-    //GAPRole_SetParameter( GAPROLE_ADVERT_DATA, sizeof( advertData ), (void*)advertData );
+    GAPRole_SetParameter( GAPROLE_ADVERT_DATA, sizeof( advertData ), (void*)advertData );
     break;
   case U_MOTOR_PWM:
     TrainProfile_GetParameter(U_MOTOR_PWM,&cur_pwm);
