@@ -1,0 +1,7 @@
+*.7z
+CC2540DB/Backup of SimpleBLEPeripheral.ewp
+CC2540DB/settings/
+*.dep
+CC2540DB/CC2540/
+CC2540DB/RELEASE/
+*.ewt
