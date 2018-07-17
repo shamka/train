@@ -146,7 +146,7 @@ uint8 buffrx[10];
 uint8 bufftx[64];
 static CONST halUARTBufControl_t txBuff={0,0,64,bufftx};
 static CONST halUARTBufControl_t rxBuff={0,0,10,buffrx};
-#if defined (SHAMKA_UART_DEBUG)
+#ifdef SHAMKA_UART_DEBUG
 halUARTCfg_t uart_conf;
 static CONST char hello[]="\r\nShamka's Train Version 1.00\r\n";
 #endif
@@ -207,9 +207,9 @@ static void simpleBLEPeripheral_ProcessGATTMsg( gattMsgEvent_t *pMsg );
 static void peripheralStateNotificationCB( gaprole_States_t newState );
 static void performPeriodicTask( void );
 static void trainProfileChangeCB( uint8 paramID );
-#if defined (SHAMKA_UART_DEBUG)
+#ifdef SHAMKA_UART_DEBUG
 static void HalUARTCback (uint8 port, uint8 event){
-
+port++;
 };
 #endif
 static float getVolt(uint16 adc){
@@ -279,7 +279,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
   else{
     temp[8]=osal_snv_read(SH_SNV_RESP,31,scanRspData);
   }
-#if defined (SHAMKA_UART_DEBUG)
+#ifdef SHAMKA_UART_DEBUG
   osal_memset(&uart_conf,0,sizeof(uart_conf));
   uart_conf.baudRate=HAL_UART_BR_115200;
   uart_conf.rx=rxBuff;
@@ -347,7 +347,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     GAPBondMgr_SetParameter( GAPBOND_IO_CAPABILITIES, sizeof ( uint8 ), &ioCap );
     GAPBondMgr_SetParameter( GAPBOND_BONDING_ENABLED, sizeof ( uint8 ), &bonding );
   }
-#if defined (SHAMKA_UART_DEBUG)  
+#ifdef SHAMKA_UART_DEBUG
     HalUARTWrite(HAL_UART_PORT_0,(uint8*)hello,sizeof(hello));
 #endif
   TrainProfile_AddService( GATT_ALL_SERVICES );  // Simple GATT Profile
@@ -502,13 +502,13 @@ static void simpleBLEPeripheral_ProcessGATTMsg( gattMsgEvent_t *pMsg )
  *
  * @return  none
  */
+static gaprole_States_t curState;
+#ifdef PLUS_BROADCASTER
+static uint8 first_conn_flag = 0;
+#endif // PLUS_BROADCASTER
 static void peripheralStateNotificationCB( gaprole_States_t newState )
 {
-#ifdef PLUS_BROADCASTER
-  static uint8 first_conn_flag = 0;
-#endif // PLUS_BROADCASTER
-  
-  
+  curState=newState;
   switch ( newState )
   {
     case GAPROLE_STARTED:
@@ -638,7 +638,7 @@ static void performPeriodicTask( void )
   static uint32 tick = 0;
   static uint16 oldAdc = 0;
   tick++;
-  if((tick & 0x3f)==0){
+  if((tick & 0x1ff)==0){
     *(uint16*)temp=HalAdcRead( HAL_ADC_CHANNEL_VDD, HAL_ADC_RESOLUTION_10 ) & 0xfffc;
     if(oldAdc!=*(uint16*)temp){
       oldAdc=*(uint16*)temp;
@@ -668,13 +668,31 @@ static void trainProfileChangeCB( uint8 paramID )
   {
   case U_DEV_NAME:
     osal_snv_write(SH_SNV_RESP,scanRspData[0]+1,scanRspData);
+    //temp[0] = (uint8)sprintf((char*)&temp[1],"state: %08X\r\n",curState);
+    //if(temp[0]>0)HalUARTWrite(0,(uint8*)&temp[1],temp[0]);
+    
+#ifdef PLUS_BROADCASTER
+    if(curState==GAPROLE_CONNECTED_ADV){
+      temp[0] = FALSE;
+      GAPRole_SetParameter(GAPROLE_ADV_NONCONN_ENABLED, sizeof(uint8),&temp[0]);
+      temp[0] = TRUE;
+      GAPRole_SetParameter(GAPROLE_ADV_NONCONN_ENABLED, sizeof(uint8),&temp[0]);
+    }
+#endif // PLUS_BROADCASTER
+    if(curState==GAPROLE_CONNECTED){
+      temp[0] = FALSE;
+      GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8),&temp[0]);
+      temp[0] = TRUE;
+      GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8),&temp[0]);
+    } 
+    
     if(scanRspData[0]>0){
       GAPRole_SetParameter( GAPROLE_SCAN_RSP_DATA, 1+scanRspData[0], (void*)scanRspData );
     }
     else{
       GAPRole_SetParameter( GAPROLE_SCAN_RSP_DATA, 0, (void*)scanRspData );
     }
-    GAPRole_SetParameter( GAPROLE_ADVERT_DATA, sizeof( advertData ), (void*)advertData );
+   
     break;
   case U_MOTOR_PWM:
     TrainProfile_GetParameter(U_MOTOR_PWM,&cur_pwm);

@@ -765,6 +765,7 @@ static bStatus_t trainProfile_ReadAttrCB( uint16 connHandle, gattAttribute_t *pA
 {
   bStatus_t status = SUCCESS;
   char *text=NULL;
+  printText("trainProfile_ReadAttrCB\r\n");
   // If attribute permissions require authorization to read, return error
   if ( gattPermitAuthorRead( pAttr->permissions ) )
   {

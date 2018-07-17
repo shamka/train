@@ -95,7 +95,7 @@ extern "C"
   
 #define UUID_LAST(n) n[15]
 
-#if defined (SHAMKA_UART_DEBUG)
+#ifdef SHAMKA_UART_DEBUG
 #define printText(t) {char tt[]=t;HalUARTWrite(0,(uint8*)tt,sizeof(tt));}
 #else
 #define printText(t)
