@@ -89,7 +89,7 @@
 #define SBP_PERIODIC_EVT_PERIOD                   80
 
 // What is the advertising interval when device is discoverable (units of 625us, 160=100ms)
-#define DEFAULT_ADVERTISING_INTERVAL          (uint16)(778/0.625)
+#define DEFAULT_ADVERTISING_INTERVAL          (uint16)(1500/0.625)
 
 // Limited discoverable mode advertises for 30.72s, and then stops
 // General discoverable mode advertises indefinitely
@@ -265,20 +265,7 @@ static trainProfileCBs_t simpleBLEPeripheral_TrainProfileCBs =
  */
 void SimpleBLEPeripheral_Init( uint8 task_id )
 {
-  
-  osal_snv_read(SH_SNV_INIT,1,temp);
-  if(temp[0]!=SH_SNV_INIT_VALUE){
-    osal_memset(temp,0,sizeof(temp));
-    temp[0]=SH_SNV_INIT_VALUE;
-    temp[8]=osal_snv_write(SH_SNV_INIT,1,temp);
-    osal_memcpy(scanRspData,locNameDef,sizeof(locNameDef));
-    temp[8]=osal_snv_write(SH_SNV_RESP,sizeof(locNameDef),scanRspData);
-    temp[8]=osal_snv_write(SH_SNV_PASS,4,&temp[1]);
-    temp[8]=osal_snv_write(SH_SNV_TRAIN_DEF_CONF,4,&temp[1]);
-  }
-  else{
-    temp[8]=osal_snv_read(SH_SNV_RESP,31,scanRspData);
-  }
+  osal_snv_read(SH_SNV_RESP,31,scanRspData);
 #ifdef SHAMKA_UART_DEBUG
   osal_memset(&uart_conf,0,sizeof(uart_conf));
   uart_conf.baudRate=HAL_UART_BR_115200;
@@ -313,7 +300,10 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     GAPRole_SetParameter( GAPROLE_ADVERT_ENABLED, sizeof( uint8 ), &initial_advertising_enable );
     GAPRole_SetParameter( GAPROLE_ADVERT_OFF_TIME, sizeof( uint16 ), &gapRole_AdvertOffTime );
 
-    if(scanRspData[0]>0)GAPRole_SetParameter( GAPROLE_SCAN_RSP_DATA, 1+scanRspData[0], (void*)scanRspData );
+    if(scanRspData[0]!=0xFF){
+      if(scanRspData[0]>0){GAPRole_SetParameter( GAPROLE_SCAN_RSP_DATA, 1+scanRspData[0], (void*)scanRspData );}
+      else{GAPRole_SetParameter( GAPROLE_SCAN_RSP_DATA, sizeof(locNameDef), (void*)locNameDef );}
+    }
     GAPRole_SetParameter( GAPROLE_ADVERT_DATA, (sizeof( advertData )<1)?0:sizeof( advertData ), (void*)advertData );
 
     GAPRole_SetParameter( GAPROLE_PARAM_UPDATE_ENABLE, sizeof( uint8 ), &enable_update_request );
@@ -347,9 +337,6 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     GAPBondMgr_SetParameter( GAPBOND_IO_CAPABILITIES, sizeof ( uint8 ), &ioCap );
     GAPBondMgr_SetParameter( GAPBOND_BONDING_ENABLED, sizeof ( uint8 ), &bonding );
   }
-#ifdef SHAMKA_UART_DEBUG
-    HalUARTWrite(HAL_UART_PORT_0,(uint8*)hello,sizeof(hello));
-#endif
   TrainProfile_AddService( GATT_ALL_SERVICES );  // Simple GATT Profile
   // Setup the TrainProfile Characteristic Values
   {
@@ -435,6 +422,10 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
 
     // Set timer for first periodic event
     osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
+    
+#ifdef SHAMKA_UART_DEBUG
+  HalUARTWrite(HAL_UART_PORT_0,(uint8*)hello,sizeof(hello));
+#endif
 
     return ( events ^ SBP_START_DEVICE_EVT );
   }
@@ -668,24 +659,7 @@ static void trainProfileChangeCB( uint8 paramID )
   {
   case U_DEV_NAME:
     osal_snv_write(SH_SNV_RESP,scanRspData[0]+1,scanRspData);
-    //temp[0] = (uint8)sprintf((char*)&temp[1],"state: %08X\r\n",curState);
-    //if(temp[0]>0)HalUARTWrite(0,(uint8*)&temp[1],temp[0]);
-    
-#ifdef PLUS_BROADCASTER
-    if(curState==GAPROLE_CONNECTED_ADV){
-      temp[0] = FALSE;
-      GAPRole_SetParameter(GAPROLE_ADV_NONCONN_ENABLED, sizeof(uint8),&temp[0]);
-      temp[0] = TRUE;
-      GAPRole_SetParameter(GAPROLE_ADV_NONCONN_ENABLED, sizeof(uint8),&temp[0]);
-    }
-#endif // PLUS_BROADCASTER
-    if(curState==GAPROLE_CONNECTED){
-      temp[0] = FALSE;
-      GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8),&temp[0]);
-      temp[0] = TRUE;
-      GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8),&temp[0]);
-    } 
-    
+
     if(scanRspData[0]>0){
       GAPRole_SetParameter( GAPROLE_SCAN_RSP_DATA, 1+scanRspData[0], (void*)scanRspData );
     }
