@@ -95,6 +95,23 @@ int main(void)
 
   /* Initialize LL */
   
+  
+//PWM Configure
+PERCFG |= BV(6);     //selected alt2 location
+P1SEL  |= BV(0); //P1.0 - CH2 - MOTOR
+P1SEL  |= BV(1); //P1.1 - CH1 - LED
+HalTimer1Init(0);
+halTimer1SetChannelDuty(HAL_T1_CH1,0);
+halTimer1SetChannelDuty(HAL_T1_CH2,0);
+
+//ADC Config
+APCFG  |= BV(6); //P0.6 - ADC 1
+APCFG  |= BV(7); //P0.7 - ADC 2
+
+// GPIO Config
+P1DIR |= BV(2); //P1.2 - LED1 - output
+P1DIR |= BV(3); //P1.3 - LED2 - output
+
 
   /* Initialize the operating system */
   osal_init_system();

@@ -84,7 +84,7 @@
 CONST uint8 trainProfileServUUID[] ={TRAINPROFILE_SERV_UUID};
 
 CONST uint8 trainProfile_MOTOR_PWM_UUID[] ={TRAINPROFILE_MOTOR_PWM_UUID};
-CONST uint8 trainProfileMOTOR_PWM_access = GATT_PROP_READ|GATT_PROP_AUTHEN;
+CONST uint8 trainProfileMOTOR_PWM_access = GATT_PROP_READ|GATT_PROP_WRITE;
 static uint8 trainProfileMOTOR_PWM_value     = 0;
 
 CONST uint8 trainProfile_MOTOR_CURRENT_UUID[] ={TRAINPROFILE_MOTOR_CURRENT_UUID};
@@ -139,6 +139,8 @@ CONST uint8 trainProfile_DEV_APPE_UUID[] ={LO_UINT16(TRAINPROFILE_DEV_APPE_UUID)
 CONST uint8 trainProfileDEV_APPE_access = GATT_PROP_READ;
 CONST uint16 trainProfileDEV_APPE_value = GAP_APPEARE_GENERIC_HID;
 
+CONST uint8 trainBattaryServiceUUID[ATT_BT_UUID_SIZE]={LO_UINT16( TRAINPROFILE_BATT_SERV_UUID ), HI_UINT16( TRAINPROFILE_BATT_SERV_UUID )};
+
 /*********************************************************************
  * EXTERNAL VARIABLES
  */
@@ -152,6 +154,7 @@ CONST uint16 trainProfileDEV_APPE_value = GAP_APPEARE_GENERIC_HID;
  */
 static trainProfileCBs_t *trainProfile_AppCBs = NULL;
 static CONST gattAttrType_t trainDeviceProfileService = { ATT_BT_UUID_SIZE, gapServiceUUID };
+static CONST gattAttrType_t trainBattaryProfileService = { ATT_BT_UUID_SIZE, trainBattaryServiceUUID };
 static CONST gattAttrType_t trainProfileService = { sizeof(trainProfileServUUID), trainProfileServUUID };
 
 /*********************************************************************
@@ -198,18 +201,16 @@ static gattAttribute_t trainDeviceProfileAttrTbl[] =
   },
 
 };
-
-static gattAttribute_t trainProfileAttrTbl[] = 
+static gattAttribute_t trainBattaryProfileAttrTbl[] = 
 {
-  
   { 
     { ATT_BT_UUID_SIZE, primaryServiceUUID }, /* type */
     GATT_PERMIT_READ,                         /* permissions */
     0,                                        /* handle */
-    (uint8 *)&trainProfileService            /* pValue */
+    (uint8*)&trainBattaryProfileService            /* pValue */
   },
   
-  
+ //777 
   { 
     { ATT_BT_UUID_SIZE, characterUUID }, /* type */
     GATT_PERMIT_READ,  /* permissions */
@@ -265,6 +266,18 @@ static gattAttribute_t trainProfileAttrTbl[] =
      GATT_PERMIT_READ | GATT_PERMIT_WRITE,
      0,
      (uint8 *)&trainProfile_BATT_conns
+  },
+ 
+};
+
+static gattAttribute_t trainProfileAttrTbl[] = 
+{
+  
+  { 
+    { ATT_BT_UUID_SIZE, primaryServiceUUID }, /* type */
+    GATT_PERMIT_READ,                         /* permissions */
+    0,                                        /* handle */
+    (uint8 *)&trainProfileService            /* pValue */
   },
   
   { 
@@ -485,6 +498,10 @@ bStatus_t TrainProfile_AddService( uint32 services )
     // Register GATT attribute list and CBs with GATT Server App
     status = GATTServApp_RegisterService( trainDeviceProfileAttrTbl, 
                                           GATT_NUM_ATTRS( trainDeviceProfileAttrTbl ),
+                                          GATT_MAX_ENCRYPT_KEY_SIZE,
+                                          &trainProfileCBs );
+    status = GATTServApp_RegisterService( trainBattaryProfileAttrTbl, 
+                                          GATT_NUM_ATTRS( trainBattaryProfileAttrTbl ),
                                           GATT_MAX_ENCRYPT_KEY_SIZE,
                                           &trainProfileCBs );
     status = GATTServApp_RegisterService( trainProfileAttrTbl, 

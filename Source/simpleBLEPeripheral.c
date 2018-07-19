@@ -89,7 +89,7 @@
 #define SBP_PERIODIC_EVT_PERIOD                   80
 
 // What is the advertising interval when device is discoverable (units of 625us, 160=100ms)
-#define DEFAULT_ADVERTISING_INTERVAL          (uint16)(1500/0.625)
+#define DEFAULT_ADVERTISING_INTERVAL          (uint16)(500/0.625)
 
 // Limited discoverable mode advertises for 30.72s, and then stops
 // General discoverable mode advertises indefinitely
@@ -493,13 +493,11 @@ static void simpleBLEPeripheral_ProcessGATTMsg( gattMsgEvent_t *pMsg )
  *
  * @return  none
  */
-static gaprole_States_t curState;
 #ifdef PLUS_BROADCASTER
 static uint8 first_conn_flag = 0;
 #endif // PLUS_BROADCASTER
 static void peripheralStateNotificationCB( gaprole_States_t newState )
 {
-  curState=newState;
   switch ( newState )
   {
     case GAPROLE_STARTED:
