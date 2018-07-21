@@ -109,6 +109,8 @@ APCFG  |= BV(6); //P0.6 - ADC 1
 APCFG  |= BV(7); //P0.7 - ADC 2
 
 // GPIO Config
+P1_2=0;
+P1_3=0;
 P1DIR |= BV(2); //P1.2 - LED1 - output
 P1DIR |= BV(3); //P1.3 - LED2 - output
 

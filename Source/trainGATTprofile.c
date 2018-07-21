@@ -88,7 +88,7 @@ CONST uint8 trainProfileMOTOR_PWM_access = GATT_PROP_READ|GATT_PROP_WRITE;
 static uint8 trainProfileMOTOR_PWM_value     = 0;
 // MOTOR Current
 CONST uint8 trainProfile_MOTOR_CURRENT_UUID[] ={TRAINPROFILE_MOTOR_CURRENT_UUID};
-CONST uint8 trainProfileMOTOR_CURRENT_access = GATT_PROP_READ|GATT_PROP_NOTIFY;
+CONST uint8 trainProfileMOTOR_CURRENT_access = GATT_PROP_READ|GATT_PROP_INDICATE;
 static uint8 trainProfileMOTOR_CURRENT_value     = 0;
 static gattCharCfg_t *trainProfile_MOTOR_CURRENT_conns=0;
 // LED PWM
@@ -105,12 +105,12 @@ CONST uint8 trainProfileDEF_CONFIG_access = GATT_PROP_READ|GATT_PROP_WRITE;
 static uint8 trainProfileDEF_CONFIG_value[TRAIN_STATIC_CONFIG_LEN] = {0,0,0,0,0};//ignoreWall,ignoreGnd,maxLed,maxMotor,motorWhenOnTrain
 // ADC 1 - wall proximity
 CONST uint8 trainProfile_PROXADC1_UUID[] ={TRAINPROFILE_PROXADC1_UUID};
-CONST uint8 trainProfilePROXADC1_access = GATT_PROP_READ|GATT_PROP_NOTIFY;
+CONST uint8 trainProfilePROXADC1_access = GATT_PROP_READ|GATT_PROP_INDICATE;
 static uint8 trainProfilePROXADC1_value     = 0;
 static gattCharCfg_t *trainProfile_PROXADC1_conns=0;
 // ADC 2 - Ground proximity
 CONST uint8 trainProfile_PROXADC2_UUID[] ={TRAINPROFILE_PROXADC2_UUID};
-CONST uint8 trainProfilePROXADC2_access = GATT_PROP_READ|GATT_PROP_NOTIFY;
+CONST uint8 trainProfilePROXADC2_access = GATT_PROP_READ|GATT_PROP_INDICATE;
 static uint8 trainProfilePROXADC2_value     = 0;
 static gattCharCfg_t *trainProfile_PROXADC2_conns=0;
 
@@ -118,19 +118,19 @@ static gattCharCfg_t *trainProfile_PROXADC2_conns=0;
 CONST uint8 trainBattaryServiceUUID[ATT_BT_UUID_SIZE]={LO_UINT16( TRAINPROFILE_BATT_SERV_UUID ), HI_UINT16( TRAINPROFILE_BATT_SERV_UUID )};
 // BATTARY VALUE
 CONST uint8 trainProfile_BATT_UUID[] ={LO_UINT16(TRAINPROFILE_BATT_UUID),HI_UINT16(TRAINPROFILE_BATT_UUID)};
-CONST uint8 trainProfileBATT_access = GATT_PROP_READ|GATT_PROP_NOTIFY;
+CONST uint8 trainProfileBATT_access = GATT_PROP_READ|GATT_PROP_INDICATE;
 static uint8 trainProfileBATT_value     = 100;
 static gattCharCfg_t *trainProfile_BATT_conns=0;
 // BATTARY voltage
 CONST uint8 trainProfile_BATT_VOLT_UUID[] ={TRAINPROFILE_BATT_VOLT_UUID};
-CONST uint8 trainProfileBATT_VOLT_access = GATT_PROP_READ|GATT_PROP_NOTIFY;
+CONST uint8 trainProfileBATT_VOLT_access = GATT_PROP_READ|GATT_PROP_INDICATE;
 static float trainProfileBATT_VOLT_value = 0;
 static gattCharCfg_t *trainProfile_BATT_VOLT_conns=0;
 // BATTARY ADC
 static uint16 trainProfileBATT_ADC_value = 0;
 #ifdef BATT_ADC
 CONST uint8 trainProfile_BATT_ADC_UUID[] ={TRAINPROFILE_BATT_ADC_UUID};
-CONST uint8 trainProfileBATT_ADC_access = GATT_PROP_READ|GATT_PROP_NOTIFY;
+CONST uint8 trainProfileBATT_ADC_access = GATT_PROP_READ|GATT_PROP_INDICATE;
 static gattCharCfg_t *trainProfile_BATT_ADC_conns=0;
 #endif
 
@@ -461,10 +461,10 @@ bStatus_t TrainProfile_AddService( uint32 services )
   GATTServApp_InitCharCfg( INVALID_CONNHANDLE, trainProfile_PROXADC1_conns );
   GATTServApp_InitCharCfg( INVALID_CONNHANDLE, trainProfile_PROXADC2_conns );
   GATTServApp_InitCharCfg( INVALID_CONNHANDLE, trainProfile_BATT_conns );
+  GATTServApp_InitCharCfg( INVALID_CONNHANDLE, trainProfile_BATT_VOLT_conns );
 #ifdef BATT_ADC
   GATTServApp_InitCharCfg( INVALID_CONNHANDLE, trainProfile_BATT_ADC_conns );
 #endif
-  GATTServApp_InitCharCfg( INVALID_CONNHANDLE, trainProfile_BATT_VOLT_conns );
     
   if ( services & 1 )
   {
@@ -634,7 +634,7 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
       if(trainProfileBATT_value!=*(uint8*)value){
         trainProfileBATT_value=*(uint8*)value;
         GATTServApp_ProcessCharCfg( trainProfile_BATT_conns, &trainProfileBATT_value, FALSE,
-                                    trainProfileAttrTbl, GATT_NUM_ATTRS( trainProfileAttrTbl ),
+                                    trainBattaryProfileAttrTbl, GATT_NUM_ATTRS( trainBattaryProfileAttrTbl ),
                                     INVALID_TASK_ID, trainProfile_ReadAttrCB );
       }
     }
@@ -651,7 +651,7 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
       trainProfileBATT_ADC_value=*(uint16*)value;
 #ifdef BATT_ADC    
       GATTServApp_ProcessCharCfg( trainProfile_BATT_ADC_conns, (uint8*)&trainProfileBATT_ADC_value, FALSE,
-                                    trainProfileAttrTbl, GATT_NUM_ATTRS( trainProfileAttrTbl ),
+                                    trainBattaryProfileAttrTbl, GATT_NUM_ATTRS( trainBattaryProfileAttrTbl ),
                                     INVALID_TASK_ID, trainProfile_ReadAttrCB );
 #endif
     }
@@ -667,7 +667,7 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
       }
       trainProfileBATT_VOLT_value=*(float*)value;
       GATTServApp_ProcessCharCfg( trainProfile_BATT_VOLT_conns, (uint8*)&trainProfileBATT_VOLT_value, FALSE,
-                                    trainProfileAttrTbl, GATT_NUM_ATTRS( trainProfileAttrTbl ),
+                                    trainBattaryProfileAttrTbl, GATT_NUM_ATTRS( trainBattaryProfileAttrTbl ),
                                     INVALID_TASK_ID, trainProfile_ReadAttrCB );
     }
     else{
@@ -907,7 +907,7 @@ static bStatus_t trainProfile_WriteAttrCB( uint16 connHandle, gattAttribute_t *p
     {
 
     case GATT_CLIENT_CHAR_CFG_UUID:
-      status = GATTServApp_ProcessCCCWriteReq( connHandle, pAttr, pValue, len, offset, GATT_CLIENT_CFG_NOTIFY );
+      status = GATTServApp_ProcessCCCWriteReq( connHandle, pAttr, pValue, len, offset, (*pValue==2)?GATT_CLIENT_CFG_INDICATE:GATT_CLIENT_CFG_NOTIFY );
       break;
         
     case TRAINPROFILE_DEV_NAME_UUID:

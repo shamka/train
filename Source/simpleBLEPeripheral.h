@@ -72,6 +72,19 @@ extern "C"
 #define SH_SNV_RESP 0x80
 #define SH_SNV_PASS 0xA0
 #define SH_SNV_TRAIN_DEF_CONF 0xA4
+  
+  
+  
+// PORT CONFIGS
+//PWM
+#define PORT_PWM_MOTOR   P1_0 //P1.0 - CH2 - MOTOR
+#define PORT_PWM_LED     P1_1 //P1.1 - CH1 - LED
+//ADC Config
+#define PORT_ADC_WALL    P0_6 //P0.6 - ADC 1
+#define PORT_ADC_GROUND  P0_7 //P0.7 - ADC 2
+// GPIO Config
+#define PORT_GPIO_WALL   P1_2 //P1.2 - LED1 - output
+#define PORT_GPIO_GROUND P1_3 //P1.3 - LED2 - output
 /*********************************************************************
  * MACROS
  */

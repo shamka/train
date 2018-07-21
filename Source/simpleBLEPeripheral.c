@@ -360,18 +360,6 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     TrainProfile_SetParameter(U_PROXADC1, 1,&temp[0]);
     TrainProfile_SetParameter(U_PROXADC2, 1,&temp[1]);
     
-    
-    HalAdcSetReference( HAL_ADC_REF_125V );
-    
-    *(uint16*)temp=HalAdcRead( HAL_ADC_CHANNEL_VDD, HAL_ADC_RESOLUTION_10 );
-    TrainProfile_SetParameter(U_BATT_ADC, 2,&temp);
-
-    *(float*)&temp[4]=getVolt(*(uint16*)temp);
-    TrainProfile_SetParameter(U_BATT_VOLT, sizeof(float),&temp[4]);
-
-    temp[0]=getPerc(*(float*)&temp[4]);
-    TrainProfile_SetParameter(U_BATT, 1,&temp);
-    
   }
   // Register callback with SimpleGATTprofile
   VOID TrainProfile_RegisterAppCBs( &simpleBLEPeripheral_TrainProfileCBs );
@@ -631,9 +619,23 @@ printText("state default\r\n");
  *
  * @return  none
  */
-static void performPeriodicTask( void )
+static void performPeriodicTask( void ) //80ms - 125ticks for 10sec
 {
-
+  static uint8 battary_update = 254;
+  battary_update++;
+  if(battary_update>250){// Update battary level every 20 seconds
+    battary_update=0;
+    HalAdcSetReference( HAL_ADC_REF_125V ); //1.20V
+    
+    *(uint16*)temp=HalAdcRead( HAL_ADC_CHANNEL_VDD, HAL_ADC_RESOLUTION_10 );
+    TrainProfile_SetParameter(U_BATT_ADC, 2,&temp);
+    
+    *(float*)&temp[4]=getVolt(*(uint16*)temp);
+    TrainProfile_SetParameter(U_BATT_VOLT, sizeof(float),&temp[4]);
+    
+    temp[0]=getPerc(*(float*)&temp[4]);
+    TrainProfile_SetParameter(U_BATT, 1,&temp);
+  }
 }
 
 /*********************************************************************
