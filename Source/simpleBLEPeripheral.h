@@ -69,9 +69,7 @@ extern "C"
 
   
 //SNV storage ids
-#define SH_SNV_INIT 0x80
-#define SH_SNV_INIT_VALUE 0x89
-#define SH_SNV_RESP 0x81
+#define SH_SNV_RESP 0x80
 #define SH_SNV_PASS 0xA0
 #define SH_SNV_TRAIN_DEF_CONF 0xA4
 /*********************************************************************

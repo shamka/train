@@ -309,7 +309,8 @@
                     <state>XOSC32K_INSTALLED=TRUE</state>
                     <state>HAL_UART_DMA=1</state>
                     <state>HAL_UART=TRUE</state>
-                    <state>SHAMKA_UART_DEBUG</state>
+                    <state>xSHAMKA_UART_DEBUG</state>
+                    <state>xBATT_ADC</state>
                 </option>
                 <option>
                     <name>CCPreprocFile</name>

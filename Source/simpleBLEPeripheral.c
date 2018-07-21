@@ -63,7 +63,7 @@
 
 #include "gapgattserver.h"
 #include "gattservapp.h"
-//#include "devinfoservice.h"
+
 #include "trainGATTprofile.h"
 
 #include "peripheral.h"
@@ -72,7 +72,10 @@
 
 #include "simpleBLEPeripheral.h"
 
+#ifdef SHAMKA_UART_DEBUG
 #include "hal_uart.h"
+#endif
+
 #include "osal_snv.h"
 
 #include "stdio.h"
@@ -89,7 +92,7 @@
 #define SBP_PERIODIC_EVT_PERIOD                   80
 
 // What is the advertising interval when device is discoverable (units of 625us, 160=100ms)
-#define DEFAULT_ADVERTISING_INTERVAL          (uint16)(500/0.625)
+#define DEFAULT_ADVERTISING_INTERVAL          (uint16)(1000/0.625)
 
 // Limited discoverable mode advertises for 30.72s, and then stops
 // General discoverable mode advertises indefinitely
@@ -142,17 +145,17 @@
  * LOCAL VARIABLES
  */
 
+#ifdef SHAMKA_UART_DEBUG
 uint8 buffrx[10];
 uint8 bufftx[64];
 static CONST halUARTBufControl_t txBuff={0,0,64,bufftx};
 static CONST halUARTBufControl_t rxBuff={0,0,10,buffrx};
-#ifdef SHAMKA_UART_DEBUG
 halUARTCfg_t uart_conf;
 static CONST char hello[]="\r\nShamka's Train Version 1.00\r\n";
 #endif
+
 static CONST uint8 locNameDef[]={0x0F,GAP_ADTYPE_LOCAL_NAME_COMPLETE,'S','h','a','m','k','a','\'','s',' ','T','r','a','i','n',};
 uint8 temp[32];
-
 
 static uint8 simpleBLEPeripheral_TaskID;   // Task ID for internal task/event processing
 
@@ -207,11 +210,13 @@ static void simpleBLEPeripheral_ProcessGATTMsg( gattMsgEvent_t *pMsg );
 static void peripheralStateNotificationCB( gaprole_States_t newState );
 static void performPeriodicTask( void );
 static void trainProfileChangeCB( uint8 paramID );
+
 #ifdef SHAMKA_UART_DEBUG
 static void HalUARTCback (uint8 port, uint8 event){
 port++;
 };
 #endif
+
 static float getVolt(uint16 adc){
   return ((adc*1.20)/511)*3;//sprintf((char *)temp,"Voltage: %#5.4f",volt);
 }
@@ -219,7 +224,7 @@ static uint8 getPerc(float volt){
   if(volt>=3.0)return 100;
   if(volt<=2.0)return 0;
   volt-=2.0;
-  return (uint8)(((volt*100)+136)/137);
+  return (uint8)(volt*100);
 }
 
 /*********************************************************************
@@ -266,6 +271,7 @@ static trainProfileCBs_t simpleBLEPeripheral_TrainProfileCBs =
 void SimpleBLEPeripheral_Init( uint8 task_id )
 {
   osal_snv_read(SH_SNV_RESP,31,scanRspData);
+  
 #ifdef SHAMKA_UART_DEBUG
   osal_memset(&uart_conf,0,sizeof(uart_conf));
   uart_conf.baudRate=HAL_UART_BR_115200;
@@ -304,7 +310,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
       if(scanRspData[0]>0){GAPRole_SetParameter( GAPROLE_SCAN_RSP_DATA, 1+scanRspData[0], (void*)scanRspData );}
       else{GAPRole_SetParameter( GAPROLE_SCAN_RSP_DATA, sizeof(locNameDef), (void*)locNameDef );}
     }
-    GAPRole_SetParameter( GAPROLE_ADVERT_DATA, (sizeof( advertData )<1)?0:sizeof( advertData ), (void*)advertData );
+    GAPRole_SetParameter( GAPROLE_ADVERT_DATA, sizeof( advertData ), (void*)advertData );
 
     GAPRole_SetParameter( GAPROLE_PARAM_UPDATE_ENABLE, sizeof( uint8 ), &enable_update_request );
     GAPRole_SetParameter( GAPROLE_MIN_CONN_INTERVAL, sizeof( uint16 ), &desired_min_interval );
@@ -337,12 +343,12 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     GAPBondMgr_SetParameter( GAPBOND_IO_CAPABILITIES, sizeof ( uint8 ), &ioCap );
     GAPBondMgr_SetParameter( GAPBOND_BONDING_ENABLED, sizeof ( uint8 ), &bonding );
   }
-  TrainProfile_AddService( GATT_ALL_SERVICES );  // Simple GATT Profile
+  TrainProfile_AddService( GATT_ALL_SERVICES );
   // Setup the TrainProfile Characteristic Values
   {
     osal_memset(temp,0,sizeof(temp));
-    osal_snv_read(SH_SNV_TRAIN_DEF_CONF,4,temp);
-    TrainProfile_SetParameter(U_DEF_CONFIG, 4,temp);
+    osal_snv_read(SH_SNV_TRAIN_DEF_CONF,TRAIN_STATIC_CONFIG_LEN,temp);
+    TrainProfile_SetParameter(U_DEF_CONFIG, TRAIN_STATIC_CONFIG_LEN,temp);
     
     TrainProfile_SetParameter(U_MOTOR_CURRENT, 1,&temp[3]);
     TrainProfile_SetParameter(U_MOTOR_PWM, 1,&temp[3]);
@@ -359,9 +365,12 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     
     *(uint16*)temp=HalAdcRead( HAL_ADC_CHANNEL_VDD, HAL_ADC_RESOLUTION_10 );
     TrainProfile_SetParameter(U_BATT_ADC, 2,&temp);
-    
-    temp[2]=getPerc(*(uint16*)temp);
-    TrainProfile_SetParameter(U_BATT, 1,&temp[2]);
+
+    *(float*)&temp[4]=getVolt(*(uint16*)temp);
+    TrainProfile_SetParameter(U_BATT_VOLT, sizeof(float),&temp[4]);
+
+    temp[0]=getPerc(*(float*)&temp[4]);
+    TrainProfile_SetParameter(U_BATT, 1,&temp);
     
   }
   // Register callback with SimpleGATTprofile
@@ -624,19 +633,7 @@ printText("state default\r\n");
  */
 static void performPeriodicTask( void )
 {
-  static uint32 tick = 0;
-  static uint16 oldAdc = 0;
-  tick++;
-  if((tick & 0x1ff)==0){
-    *(uint16*)temp=HalAdcRead( HAL_ADC_CHANNEL_VDD, HAL_ADC_RESOLUTION_10 ) & 0xfffc;
-    if(oldAdc!=*(uint16*)temp){
-      oldAdc=*(uint16*)temp;
-      TrainProfile_SetParameter(U_BATT_ADC, 2,&oldAdc);
-      *(float*)temp=getVolt(oldAdc);
-      TrainProfile_SetParameter(U_BATT_VOLT, sizeof(float),temp);
-      temp[0]=getPerc(*(float*)temp);
-    }
-  }
+
 }
 
 /*********************************************************************
@@ -655,24 +652,29 @@ static void trainProfileChangeCB( uint8 paramID )
 
   switch( paramID )
   {
-  case U_DEV_NAME:
+  case U_DEV_NAME:{
     osal_snv_write(SH_SNV_RESP,scanRspData[0]+1,scanRspData);
-
     if(scanRspData[0]>0){
       GAPRole_SetParameter( GAPROLE_SCAN_RSP_DATA, 1+scanRspData[0], (void*)scanRspData );
     }
     else{
       GAPRole_SetParameter( GAPROLE_SCAN_RSP_DATA, 0, (void*)scanRspData );
     }
-   
-    break;
-  case U_MOTOR_PWM:
+    break;}
+    
+  case U_MOTOR_PWM:{
     TrainProfile_GetParameter(U_MOTOR_PWM,&cur_pwm);
     TrainProfile_SetParameter(U_MOTOR_CURRENT,1,&cur_pwm);
-    break;
+    break;}
+    
+  case U_LED_PWM:{
+    TrainProfile_GetParameter(U_LED_PWM,&cur_pwm);
+    
+    break;}
+    
   case U_DEF_CONFIG:
     TrainProfile_GetParameter(U_DEF_CONFIG,temp);
-    osal_snv_write(SH_SNV_TRAIN_DEF_CONF,4,temp);
+    osal_snv_write(SH_SNV_TRAIN_DEF_CONF,TRAIN_STATIC_CONFIG_LEN,temp);
     break;
   default:
     // should not reach here!

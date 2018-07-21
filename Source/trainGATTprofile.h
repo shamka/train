@@ -70,8 +70,13 @@ extern "C"
 #define U_MOTOR_PWM 1
 #define U_MOTOR_CURRENT 2
 #define U_LED_PWM 3
+
 #define U_CONFIG 4
 #define U_DEF_CONFIG 5
+#define TRAIN_OPERATE_CONFIG_LEN 2
+#define TRAIN_STATIC_CONFIG_LEN 5
+  
+  
 #define U_PROXADC1 6
 #define U_PROXADC2 7
 #define U_BATT 8

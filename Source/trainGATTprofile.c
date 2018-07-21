@@ -80,66 +80,68 @@
 /*********************************************************************
  * GLOBAL VARIABLES
  */
-
+// TRAIN service
 CONST uint8 trainProfileServUUID[] ={TRAINPROFILE_SERV_UUID};
-
+// MOTOR PWM
 CONST uint8 trainProfile_MOTOR_PWM_UUID[] ={TRAINPROFILE_MOTOR_PWM_UUID};
 CONST uint8 trainProfileMOTOR_PWM_access = GATT_PROP_READ|GATT_PROP_WRITE;
 static uint8 trainProfileMOTOR_PWM_value     = 0;
-
+// MOTOR Current
 CONST uint8 trainProfile_MOTOR_CURRENT_UUID[] ={TRAINPROFILE_MOTOR_CURRENT_UUID};
 CONST uint8 trainProfileMOTOR_CURRENT_access = GATT_PROP_READ|GATT_PROP_NOTIFY;
 static uint8 trainProfileMOTOR_CURRENT_value     = 0;
-static gattCharCfg_t *trainProfile_MOTOR_CURRENT_conns;
-
+static gattCharCfg_t *trainProfile_MOTOR_CURRENT_conns=0;
+// LED PWM
 CONST uint8 trainProfile_LED_PWM_UUID[] ={TRAINPROFILE_LED_PWM_UUID};
 CONST uint8 trainProfileLED_PWM_access = GATT_PROP_READ|GATT_PROP_WRITE;
 static uint8 trainProfileLED_PWM_value     = 0;
-
+// OConfig
 CONST uint8 trainProfile_CONFIG_UUID[] ={TRAINPROFILE_CONFIG_UUID};
 CONST uint8 trainProfileCONFIG_access = GATT_PROP_READ|GATT_PROP_WRITE;
-static uint8 trainProfileCONFIG_value[]= {0,0};
-//ignoreWall,ignoreGnd,maxLed,maxMotor
-
+static uint8 trainProfileCONFIG_value[TRAIN_OPERATE_CONFIG_LEN] = {0,0};//ignoreWall,ignoreGnd
+// SConfig
 CONST uint8 trainProfile_DEF_CONFIG_UUID[] ={TRAINPROFILE_DEF_CONFIG_UUID};
 CONST uint8 trainProfileDEF_CONFIG_access = GATT_PROP_READ|GATT_PROP_WRITE;
-static uint8 trainProfileDEF_CONFIG_value[]= {0,0,0,0};
-//ignoreWall,ignoreGnd,maxLed,maxMotor,motorWhenOnTrain
-
+static uint8 trainProfileDEF_CONFIG_value[TRAIN_STATIC_CONFIG_LEN] = {0,0,0,0,0};//ignoreWall,ignoreGnd,maxLed,maxMotor,motorWhenOnTrain
+// ADC 1 - wall proximity
 CONST uint8 trainProfile_PROXADC1_UUID[] ={TRAINPROFILE_PROXADC1_UUID};
 CONST uint8 trainProfilePROXADC1_access = GATT_PROP_READ|GATT_PROP_NOTIFY;
 static uint8 trainProfilePROXADC1_value     = 0;
-static gattCharCfg_t *trainProfile_PROXADC1_conns;
-
+static gattCharCfg_t *trainProfile_PROXADC1_conns=0;
+// ADC 2 - Ground proximity
 CONST uint8 trainProfile_PROXADC2_UUID[] ={TRAINPROFILE_PROXADC2_UUID};
 CONST uint8 trainProfilePROXADC2_access = GATT_PROP_READ|GATT_PROP_NOTIFY;
 static uint8 trainProfilePROXADC2_value     = 0;
-static gattCharCfg_t *trainProfile_PROXADC2_conns;
+static gattCharCfg_t *trainProfile_PROXADC2_conns=0;
 
+// BATTARY service
+CONST uint8 trainBattaryServiceUUID[ATT_BT_UUID_SIZE]={LO_UINT16( TRAINPROFILE_BATT_SERV_UUID ), HI_UINT16( TRAINPROFILE_BATT_SERV_UUID )};
+// BATTARY VALUE
 CONST uint8 trainProfile_BATT_UUID[] ={LO_UINT16(TRAINPROFILE_BATT_UUID),HI_UINT16(TRAINPROFILE_BATT_UUID)};
 CONST uint8 trainProfileBATT_access = GATT_PROP_READ|GATT_PROP_NOTIFY;
 static uint8 trainProfileBATT_value     = 100;
-static gattCharCfg_t *trainProfile_BATT_conns;
-
-CONST uint8 trainProfile_BATT_ADC_UUID[] ={TRAINPROFILE_BATT_ADC_UUID};
-CONST uint8 trainProfileBATT_ADC_access = GATT_PROP_READ|GATT_PROP_NOTIFY;
-static uint16 trainProfileBATT_ADC_value = 0;
-static gattCharCfg_t *trainProfile_BATT_ADC_conns;
-
+static gattCharCfg_t *trainProfile_BATT_conns=0;
+// BATTARY voltage
 CONST uint8 trainProfile_BATT_VOLT_UUID[] ={TRAINPROFILE_BATT_VOLT_UUID};
 CONST uint8 trainProfileBATT_VOLT_access = GATT_PROP_READ|GATT_PROP_NOTIFY;
 static float trainProfileBATT_VOLT_value = 0;
-static gattCharCfg_t *trainProfile_BATT_VOLT_conns;
+static gattCharCfg_t *trainProfile_BATT_VOLT_conns=0;
+// BATTARY ADC
+static uint16 trainProfileBATT_ADC_value = 0;
+#ifdef BATT_ADC
+CONST uint8 trainProfile_BATT_ADC_UUID[] ={TRAINPROFILE_BATT_ADC_UUID};
+CONST uint8 trainProfileBATT_ADC_access = GATT_PROP_READ|GATT_PROP_NOTIFY;
+static gattCharCfg_t *trainProfile_BATT_ADC_conns=0;
+#endif
 
+// device name
 CONST uint8 trainProfile_DEV_NAME_UUID[] ={LO_UINT16(TRAINPROFILE_DEV_NAME_UUID),HI_UINT16(TRAINPROFILE_DEV_NAME_UUID)};
 CONST uint8 trainProfileDEV_NAME_access = GATT_PROP_READ|GATT_PROP_WRITE_NO_RSP;
 extern uint8 scanRspData[31];
-
+// appearance
 CONST uint8 trainProfile_DEV_APPE_UUID[] ={LO_UINT16(TRAINPROFILE_DEV_APPE_UUID),HI_UINT16(TRAINPROFILE_DEV_APPE_UUID)};
 CONST uint8 trainProfileDEV_APPE_access = GATT_PROP_READ;
 CONST uint16 trainProfileDEV_APPE_value = GAP_APPEARE_GENERIC_HID;
-
-CONST uint8 trainBattaryServiceUUID[ATT_BT_UUID_SIZE]={LO_UINT16( TRAINPROFILE_BATT_SERV_UUID ), HI_UINT16( TRAINPROFILE_BATT_SERV_UUID )};
 
 /*********************************************************************
  * EXTERNAL VARIABLES
@@ -155,7 +157,7 @@ CONST uint8 trainBattaryServiceUUID[ATT_BT_UUID_SIZE]={LO_UINT16( TRAINPROFILE_B
 static trainProfileCBs_t *trainProfile_AppCBs = NULL;
 static CONST gattAttrType_t trainDeviceProfileService = { ATT_BT_UUID_SIZE, gapServiceUUID };
 static CONST gattAttrType_t trainBattaryProfileService = { ATT_BT_UUID_SIZE, trainBattaryServiceUUID };
-static CONST gattAttrType_t trainProfileService = { sizeof(trainProfileServUUID), trainProfileServUUID };
+static CONST gattAttrType_t trainProfileService = { ATT_UUID_SIZE, trainProfileServUUID };
 
 /*********************************************************************
  * Profile Attributes - variables
@@ -165,6 +167,7 @@ static CONST gattAttrType_t trainProfileService = { sizeof(trainProfileServUUID)
 /*********************************************************************
  * Profile Attributes - Table
  */
+// GENERIC ACCESS SERVICE
 static gattAttribute_t trainDeviceProfileAttrTbl[] = 
 {
   { 
@@ -175,32 +178,33 @@ static gattAttribute_t trainDeviceProfileAttrTbl[] =
   },
   
   { 
-    { ATT_BT_UUID_SIZE, characterUUID }, /* type */
-    GATT_PERMIT_READ,                      /* permissions */
-    0,                                     /* handle */
-    (uint8 *)&trainProfileDEV_NAME_access       /* pValue */
+    { ATT_BT_UUID_SIZE, characterUUID },
+    GATT_PERMIT_READ,                     
+    0,                                    
+    (uint8 *)&trainProfileDEV_NAME_access  
   },
   { 
-    { ATT_BT_UUID_SIZE, trainProfile_DEV_NAME_UUID }, /* type */
-    GATT_PERMIT_READ|GATT_PERMIT_WRITE,   /* permissions */
-    0,                                     /* handle */
-    &scanRspData[2]       /* pValue */
+    { ATT_BT_UUID_SIZE, trainProfile_DEV_NAME_UUID }, 
+    GATT_PERMIT_READ|GATT_PERMIT_WRITE,  
+    0,                                     
+    &scanRspData[2]   
   },
   
   { 
-    { ATT_BT_UUID_SIZE, characterUUID }, /* type */
-    GATT_PERMIT_READ,                      /* permissions */
-    0,                                     /* handle */
-    (uint8 *)&trainProfileDEV_APPE_access       /* pValue */
+    { ATT_BT_UUID_SIZE, characterUUID }, 
+    GATT_PERMIT_READ,     
+    0,
+    (uint8 *)&trainProfileDEV_APPE_access
   },
   { 
-    { ATT_BT_UUID_SIZE, trainProfile_DEV_APPE_UUID }, /* type */
-    GATT_PERMIT_READ|GATT_PERMIT_WRITE,   /* permissions */
-    0,                                     /* handle */
-    (uint8*)&trainProfileDEV_APPE_value       /* pValue */
+    { ATT_BT_UUID_SIZE, trainProfile_DEV_APPE_UUID },
+    GATT_PERMIT_READ|GATT_PERMIT_WRITE,
+    0,
+    (uint8*)&trainProfileDEV_APPE_value
   },
 
 };
+// BATTARY SERVICE
 static gattAttribute_t trainBattaryProfileAttrTbl[] = 
 {
   { 
@@ -209,19 +213,19 @@ static gattAttribute_t trainBattaryProfileAttrTbl[] =
     0,                                        /* handle */
     (uint8*)&trainBattaryProfileService            /* pValue */
   },
-  
- //777 
+
+#ifdef BATT_ADC
   { 
-    { ATT_BT_UUID_SIZE, characterUUID }, /* type */
-    GATT_PERMIT_READ,  /* permissions */
-    0,                                     /* handle */
-    (uint8 *)&trainProfileBATT_ADC_access       /* pValue */
+    { ATT_BT_UUID_SIZE, characterUUID }, 
+    GATT_PERMIT_READ,
+    0,
+    (uint8 *)&trainProfileBATT_ADC_access
   },
   { 
-    { ATT_UUID_SIZE, trainProfile_BATT_ADC_UUID }, /* type */
-    GATT_PERMIT_READ,   /* permissions */
-    0,                                     /* handle */
-    (uint8 *)&trainProfileBATT_ADC_value       /* pValue */
+    { ATT_UUID_SIZE, trainProfile_BATT_ADC_UUID },
+    GATT_PERMIT_READ,
+    0,
+    (uint8 *)&trainProfileBATT_ADC_value
   },
   {
      {ATT_BT_UUID_SIZE , clientCharCfgUUID},
@@ -229,18 +233,19 @@ static gattAttribute_t trainBattaryProfileAttrTbl[] =
      0,
      (uint8 *)&trainProfile_BATT_ADC_conns
   },
+#endif
   
   { 
-    { ATT_BT_UUID_SIZE, characterUUID }, /* type */
-    GATT_PERMIT_READ,  /* permissions */
-    0,                                     /* handle */
-    (uint8 *)&trainProfileBATT_VOLT_access       /* pValue */
+    { ATT_BT_UUID_SIZE, characterUUID },
+    GATT_PERMIT_READ,
+    0,
+    (uint8 *)&trainProfileBATT_VOLT_access
   },
   { 
-    { ATT_UUID_SIZE, trainProfile_BATT_VOLT_UUID }, /* type */
-    GATT_PERMIT_READ,   /* permissions */
-    0,                                     /* handle */
-    (uint8 *)&trainProfileBATT_VOLT_value       /* pValue */
+    { ATT_UUID_SIZE, trainProfile_BATT_VOLT_UUID },
+    GATT_PERMIT_READ,
+    0,
+    (uint8 *)&trainProfileBATT_VOLT_value
   },
   {
      {ATT_BT_UUID_SIZE , clientCharCfgUUID},
@@ -250,16 +255,16 @@ static gattAttribute_t trainBattaryProfileAttrTbl[] =
   },
 
   { 
-    { ATT_BT_UUID_SIZE, characterUUID }, /* type */
-    GATT_PERMIT_READ,  /* permissions */
-    0,                                     /* handle */
-    (uint8 *)&trainProfileBATT_access       /* pValue */
+    { ATT_BT_UUID_SIZE, characterUUID },
+    GATT_PERMIT_READ,
+    0,
+    (uint8 *)&trainProfileBATT_access
   },
   { 
-    { ATT_BT_UUID_SIZE, trainProfile_BATT_UUID }, /* type */
-    GATT_PERMIT_READ,   /* permissions */
-    0,                                     /* handle */
-    (uint8 *)&trainProfileBATT_value       /* pValue */
+    { ATT_BT_UUID_SIZE, trainProfile_BATT_UUID },
+    GATT_PERMIT_READ,
+    0,
+    (uint8 *)&trainProfileBATT_value
   },
   {
      {ATT_BT_UUID_SIZE , clientCharCfgUUID},
@@ -269,7 +274,7 @@ static gattAttribute_t trainBattaryProfileAttrTbl[] =
   },
  
 };
-
+// TRAIN SERVICE
 static gattAttribute_t trainProfileAttrTbl[] = 
 {
   
@@ -281,29 +286,29 @@ static gattAttribute_t trainProfileAttrTbl[] =
   },
   
   { 
-    { ATT_BT_UUID_SIZE, characterUUID }, /* type */
-    GATT_PERMIT_READ,                      /* permissions */
-    0,                                     /* handle */
-    (uint8 *)&trainProfileMOTOR_PWM_access       /* pValue */
+    { ATT_BT_UUID_SIZE, characterUUID },
+    GATT_PERMIT_READ,
+    0,
+    (uint8 *)&trainProfileMOTOR_PWM_access
   },
   { 
-    { ATT_UUID_SIZE, trainProfile_MOTOR_PWM_UUID }, /* type */
-    GATT_PERMIT_READ|GATT_PERMIT_WRITE,   /* permissions */
-    0,                                     /* handle */
-    (uint8 *)&trainProfileMOTOR_PWM_value       /* pValue */
+    { ATT_UUID_SIZE, trainProfile_MOTOR_PWM_UUID },
+    GATT_PERMIT_READ|GATT_PERMIT_WRITE,
+    0,                                 
+    (uint8 *)&trainProfileMOTOR_PWM_value     
   },
   
   { 
-    { ATT_BT_UUID_SIZE, characterUUID }, /* type */
-    GATT_PERMIT_READ,                      /* permissions */
-    0,                                     /* handle */
-    (uint8*)&trainProfileMOTOR_CURRENT_access       /* pValue */
+    { ATT_BT_UUID_SIZE, characterUUID },
+    GATT_PERMIT_READ,                      
+    0,                                     
+    (uint8*)&trainProfileMOTOR_CURRENT_access  
   },
   { 
-    { ATT_UUID_SIZE, trainProfile_MOTOR_CURRENT_UUID }, /* type */
-    GATT_PERMIT_READ,   /* permissions */
-    0,                                     /* handle */
-    &trainProfileMOTOR_CURRENT_value       /* pValue */
+    { ATT_UUID_SIZE, trainProfile_MOTOR_CURRENT_UUID }, 
+    GATT_PERMIT_READ, 
+    0,                               
+    &trainProfileMOTOR_CURRENT_value  
   },
   {
      {ATT_BT_UUID_SIZE , clientCharCfgUUID},
@@ -313,55 +318,55 @@ static gattAttribute_t trainProfileAttrTbl[] =
   },
   
   { 
-    { ATT_BT_UUID_SIZE, characterUUID }, /* type */
-    GATT_PERMIT_READ,                      /* permissions */
-    0,                                     /* handle */
-    (uint8 *)&trainProfileLED_PWM_access       /* pValue */
+    { ATT_BT_UUID_SIZE, characterUUID }, 
+    GATT_PERMIT_READ,                  
+    0,                                    
+    (uint8 *)&trainProfileLED_PWM_access    
   },
   { 
-    { ATT_UUID_SIZE, trainProfile_LED_PWM_UUID }, /* type */
-    GATT_PERMIT_READ|GATT_PERMIT_WRITE,   /* permissions */
-    0,                                     /* handle */
-    (uint8 *)&trainProfileLED_PWM_value       /* pValue */
-  },
-  
-  { 
-    { ATT_BT_UUID_SIZE, characterUUID }, /* type */
-    GATT_PERMIT_READ,                      /* permissions */
-    0,                                     /* handle */
-    (uint8 *)&trainProfileCONFIG_access       /* pValue */
-  },
-  { 
-    { ATT_UUID_SIZE, trainProfile_CONFIG_UUID }, /* type */
-    GATT_PERMIT_READ|GATT_PERMIT_WRITE,   /* permissions */
-    0,                                     /* handle */
-    (uint8 *)&trainProfileCONFIG_value       /* pValue */
+    { ATT_UUID_SIZE, trainProfile_LED_PWM_UUID }, 
+    GATT_PERMIT_READ|GATT_PERMIT_WRITE,  
+    0,                                    
+    (uint8 *)&trainProfileLED_PWM_value     
   },
   
   { 
-    { ATT_BT_UUID_SIZE, characterUUID }, /* type */
-    GATT_PERMIT_READ,                      /* permissions */
-    0,                                     /* handle */
-    (uint8 *)&trainProfileDEF_CONFIG_access       /* pValue */
+    { ATT_BT_UUID_SIZE, characterUUID }, 
+    GATT_PERMIT_READ,                   
+    0,                                     
+    (uint8 *)&trainProfileCONFIG_access     
   },
   { 
-    { ATT_UUID_SIZE, trainProfile_DEF_CONFIG_UUID }, /* type */
-    GATT_PERMIT_READ|GATT_PERMIT_WRITE,   /* permissions */
-    0,                                     /* handle */
-    (uint8 *)&trainProfileDEF_CONFIG_value       /* pValue */
+    { ATT_UUID_SIZE, trainProfile_CONFIG_UUID }, 
+    GATT_PERMIT_READ|GATT_PERMIT_WRITE,  
+    0,                                   
+    (uint8 *)&trainProfileCONFIG_value     
   },
   
   { 
-    { ATT_BT_UUID_SIZE, characterUUID }, /* type */
-    GATT_PERMIT_READ,                      /* permissions */
-    0,                                     /* handle */
-    (uint8 *)&trainProfilePROXADC1_access       /* pValue */
+    { ATT_BT_UUID_SIZE, characterUUID }, 
+    GATT_PERMIT_READ,                   
+    0,                                  
+    (uint8 *)&trainProfileDEF_CONFIG_access     
   },
   { 
-    { ATT_UUID_SIZE, trainProfile_PROXADC1_UUID }, /* type */
-    GATT_PERMIT_READ,   /* permissions */
-    0,                                     /* handle */
-    (uint8 *)&trainProfilePROXADC1_value       /* pValue */
+    { ATT_UUID_SIZE, trainProfile_DEF_CONFIG_UUID },
+    GATT_PERMIT_READ|GATT_PERMIT_WRITE, 
+    0,                                  
+    (uint8 *)&trainProfileDEF_CONFIG_value   
+  },
+  
+  { 
+    { ATT_BT_UUID_SIZE, characterUUID }, 
+    GATT_PERMIT_READ,                      
+    0,                                
+    (uint8 *)&trainProfilePROXADC1_access      
+  },
+  { 
+    { ATT_UUID_SIZE, trainProfile_PROXADC1_UUID }, 
+    GATT_PERMIT_READ,  
+    0,                             
+    (uint8 *)&trainProfilePROXADC1_value 
   },
   {
      {ATT_BT_UUID_SIZE , clientCharCfgUUID},
@@ -371,16 +376,16 @@ static gattAttribute_t trainProfileAttrTbl[] =
   },
   
   { 
-    { ATT_BT_UUID_SIZE, characterUUID }, /* type */
-    GATT_PERMIT_READ,  /* permissions */
-    0,                                     /* handle */
-    (uint8 *)&trainProfilePROXADC2_access       /* pValue */
+    { ATT_BT_UUID_SIZE, characterUUID }, 
+    GATT_PERMIT_READ,  
+    0,                               
+    (uint8 *)&trainProfilePROXADC2_access       
   },
   { 
-    { ATT_UUID_SIZE, trainProfile_PROXADC2_UUID }, /* type */
-    GATT_PERMIT_READ,   /* permissions */
-    0,                                     /* handle */
-    (uint8 *)&trainProfilePROXADC2_value       /* pValue */
+    { ATT_UUID_SIZE, trainProfile_PROXADC2_UUID },
+    GATT_PERMIT_READ,  
+    0,                                    
+    (uint8 *)&trainProfilePROXADC2_value     
   },
   {
      {ATT_BT_UUID_SIZE , clientCharCfgUUID},
@@ -403,7 +408,7 @@ static bStatus_t trainProfile_WriteAttrCB( uint16 connHandle, gattAttribute_t *p
 /*********************************************************************
  * PROFILE CALLBACKS
  */
-// Simple Profile Service Callbacks
+// Train Profile Service Callbacks
 CONST gattServiceCBs_t trainProfileCBs =
 {
   trainProfile_ReadAttrCB,  // Read callback function pointer
@@ -429,67 +434,36 @@ CONST gattServiceCBs_t trainProfileCBs =
 bStatus_t TrainProfile_AddService( uint32 services )
 {
   uint8 status;
-  trainProfile_MOTOR_CURRENT_conns = (gattCharCfg_t *)osal_mem_alloc( sizeof(gattCharCfg_t) *
-                                                              linkDBNumConns );
-  if ( trainProfile_MOTOR_CURRENT_conns == NULL )
+//****************************************  
+  if ( 
+      (trainProfile_MOTOR_CURRENT_conns = (gattCharCfg_t *)osal_mem_alloc( sizeof(gattCharCfg_t) * linkDBNumConns ))==NULL 
+     || (trainProfile_PROXADC1_conns = (gattCharCfg_t *)osal_mem_alloc( sizeof(gattCharCfg_t) * linkDBNumConns ))==NULL 
+     || (trainProfile_PROXADC2_conns = (gattCharCfg_t *)osal_mem_alloc( sizeof(gattCharCfg_t) * linkDBNumConns ))==NULL 
+     || (trainProfile_BATT_conns = (gattCharCfg_t *)osal_mem_alloc( sizeof(gattCharCfg_t) * linkDBNumConns ))==NULL 
+#ifdef BATT_ADC
+     || (trainProfile_BATT_ADC_conns = (gattCharCfg_t *)osal_mem_alloc( sizeof(gattCharCfg_t) * linkDBNumConns ))==NULL 
+#endif
+     || (trainProfile_BATT_VOLT_conns = (gattCharCfg_t *)osal_mem_alloc( sizeof(gattCharCfg_t) * linkDBNumConns ))==NULL 
+     )
   {     
+    if(trainProfile_MOTOR_CURRENT_conns!=0)osal_mem_free(trainProfile_MOTOR_CURRENT_conns);
+    if(trainProfile_PROXADC1_conns!=0)osal_mem_free(trainProfile_PROXADC1_conns);
+    if(trainProfile_PROXADC2_conns!=0)osal_mem_free(trainProfile_PROXADC2_conns);
+    if(trainProfile_BATT_conns!=0)osal_mem_free(trainProfile_BATT_conns);
+#ifdef BATT_ADC
+    if(trainProfile_BATT_ADC_conns!=0)osal_mem_free(trainProfile_BATT_ADC_conns);
+#endif
+    if(trainProfile_BATT_VOLT_conns!=0)osal_mem_free(trainProfile_BATT_VOLT_conns);
     return ( bleMemAllocError );
   }
 //****************************************  
-  trainProfile_PROXADC1_conns = (gattCharCfg_t *)osal_mem_alloc( sizeof(gattCharCfg_t) *
-                                                              linkDBNumConns );
-  if ( trainProfile_PROXADC1_conns == NULL )
-  {     
-    osal_mem_free(trainProfile_MOTOR_CURRENT_conns);
-    return ( bleMemAllocError );
-  }
-//****************************************  
-  trainProfile_PROXADC2_conns = (gattCharCfg_t *)osal_mem_alloc( sizeof(gattCharCfg_t) *
-                                                              linkDBNumConns );
-  if ( trainProfile_PROXADC2_conns == NULL )
-  {     
-    osal_mem_free(trainProfile_MOTOR_CURRENT_conns);
-    osal_mem_free(trainProfile_PROXADC1_conns);
-    return ( bleMemAllocError );
-  }
-//****************************************  
-  trainProfile_BATT_conns = (gattCharCfg_t *)osal_mem_alloc( sizeof(gattCharCfg_t) *
-                                                              linkDBNumConns );
-  if ( trainProfile_BATT_conns == NULL )
-  {     
-    osal_mem_free(trainProfile_MOTOR_CURRENT_conns);
-    osal_mem_free(trainProfile_PROXADC1_conns);
-    osal_mem_free(trainProfile_PROXADC2_conns);
-    return ( bleMemAllocError );
-  }
-//****************************************  
-  trainProfile_BATT_ADC_conns = (gattCharCfg_t *)osal_mem_alloc( sizeof(gattCharCfg_t) *
-                                                              linkDBNumConns );
-  if ( trainProfile_BATT_ADC_conns == NULL )
-  {     
-    osal_mem_free(trainProfile_MOTOR_CURRENT_conns);
-    osal_mem_free(trainProfile_PROXADC1_conns);
-    osal_mem_free(trainProfile_PROXADC2_conns);
-    osal_mem_free(trainProfile_BATT_conns);
-    return ( bleMemAllocError );
-  }
-//****************************************  
-  trainProfile_BATT_VOLT_conns = (gattCharCfg_t *)osal_mem_alloc( sizeof(gattCharCfg_t) *
-                                                              linkDBNumConns );
-  if ( trainProfile_BATT_VOLT_conns == NULL )
-  {     
-    osal_mem_free(trainProfile_MOTOR_CURRENT_conns);
-    osal_mem_free(trainProfile_PROXADC1_conns);
-    osal_mem_free(trainProfile_PROXADC2_conns);
-    osal_mem_free(trainProfile_BATT_conns);
-    osal_mem_free(trainProfile_BATT_ADC_conns);
-    return ( bleMemAllocError );
-  }
   GATTServApp_InitCharCfg( INVALID_CONNHANDLE, trainProfile_MOTOR_CURRENT_conns ); 
   GATTServApp_InitCharCfg( INVALID_CONNHANDLE, trainProfile_PROXADC1_conns );
   GATTServApp_InitCharCfg( INVALID_CONNHANDLE, trainProfile_PROXADC2_conns );
   GATTServApp_InitCharCfg( INVALID_CONNHANDLE, trainProfile_BATT_conns );
+#ifdef BATT_ADC
   GATTServApp_InitCharCfg( INVALID_CONNHANDLE, trainProfile_BATT_ADC_conns );
+#endif
   GATTServApp_InitCharCfg( INVALID_CONNHANDLE, trainProfile_BATT_VOLT_conns );
     
   if ( services & 1 )
@@ -560,7 +534,7 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
   bStatus_t ret = SUCCESS;
   switch ( param )
   {
-  case U_DEV_NAME:
+  case U_DEV_NAME:{
     if(len==0){
       scanRspData[0]=0;
     }
@@ -572,18 +546,18 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
     else{
       ret = bleInvalidRange;
     }
-    break;
+    break;}
     
-  case U_MOTOR_PWM:
+  case U_MOTOR_PWM:{
     if(len==1){
       trainProfileMOTOR_PWM_value=*(uint8*)value;
     }
     else{
       ret = bleInvalidRange;
     }
-    break;
+    break;}
     
-  case U_MOTOR_CURRENT:
+  case U_MOTOR_CURRENT:{
     if(len==1){
       if(trainProfileMOTOR_CURRENT_value==*(uint8*)value){
         break;
@@ -596,35 +570,36 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
     else{
       ret = bleInvalidRange;
     }
-    break;
+    break;}
     
-  case U_LED_PWM:
+  case U_LED_PWM:{
     if(len==1){
       trainProfileLED_PWM_value=*(uint8*)value;
     }
     else{
       ret = bleInvalidRange;
     }
-    break;
-  case U_CONFIG:
-    if(len==sizeof(trainProfileCONFIG_value)){
-      osal_memcpy(&trainProfileCONFIG_value,value,sizeof(trainProfileCONFIG_value));
+    break;}
+    
+  case U_CONFIG:{
+    if(len==TRAIN_OPERATE_CONFIG_LEN){
+      osal_memcpy(&trainProfileCONFIG_value,value,TRAIN_OPERATE_CONFIG_LEN);
     }
     else{
       ret = bleInvalidRange;
     }
-    break;
+    break;}
     
-  case U_DEF_CONFIG:
-    if(len==sizeof(trainProfileDEF_CONFIG_value)){
-      osal_memcpy(&trainProfileDEF_CONFIG_value,value,sizeof(trainProfileDEF_CONFIG_value));
+  case U_DEF_CONFIG:{
+    if(len==TRAIN_STATIC_CONFIG_LEN){
+      osal_memcpy(&trainProfileDEF_CONFIG_value,value,TRAIN_STATIC_CONFIG_LEN);
     }
     else{
       ret = bleInvalidRange;
     }
-    break;
+    break;}
     
-  case U_PROXADC1:
+  case U_PROXADC1:{
     if(len==1){
       if(trainProfilePROXADC1_value==*(uint8*)value){
         break;
@@ -637,8 +612,9 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
     else{
       ret = bleInvalidRange;
     }
-    break;
-  case U_PROXADC2:
+    break;}
+    
+  case U_PROXADC2:{
     if(len==1){
       if(trainProfilePROXADC2_value!=*(uint8*)value){
         trainProfilePROXADC2_value=*(uint8*)value;
@@ -651,8 +627,9 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
     else{
       ret = bleInvalidRange;
     }
-    break;
-  case U_BATT:
+    break;}
+    
+  case U_BATT:{
     if(len==1){
       if(trainProfileBATT_value!=*(uint8*)value){
         trainProfileBATT_value=*(uint8*)value;
@@ -664,25 +641,26 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
     else{
       ret = bleInvalidRange;
     }
-    break;
-    
-   case U_BATT_ADC:
+    break;}
+
+  case U_BATT_ADC:{
     if(len==2){
       if(trainProfileBATT_ADC_value==*(uint16*)value){
         break;
       }
       trainProfileBATT_ADC_value=*(uint16*)value;
+#ifdef BATT_ADC    
       GATTServApp_ProcessCharCfg( trainProfile_BATT_ADC_conns, (uint8*)&trainProfileBATT_ADC_value, FALSE,
                                     trainProfileAttrTbl, GATT_NUM_ATTRS( trainProfileAttrTbl ),
                                     INVALID_TASK_ID, trainProfile_ReadAttrCB );
+#endif
     }
     else{
       ret = bleInvalidRange;
     }
-    break;
+    break;}
 
-    
-   case U_BATT_VOLT:
+  case U_BATT_VOLT:{
     if(len==sizeof(float)){
       if(trainProfileBATT_VOLT_value==*(float*)value){
         break;
@@ -695,11 +673,11 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
     else{
       ret = bleInvalidRange;
     }
-    break;
+    break;}
 
-  default:
+  default:{
     ret = INVALIDPARAMETER;
-    break;
+    break;}
   }
   
   return ( ret );
@@ -726,33 +704,43 @@ bStatus_t TrainProfile_GetParameter( uint8 param, void *value )
   case U_MOTOR_PWM:
     *(uint8*)value = trainProfileMOTOR_PWM_value;
     break;
+    
   case U_MOTOR_CURRENT:
     *(uint8*)value = trainProfileMOTOR_CURRENT_value;
     break;
+    
   case U_LED_PWM:
     *(uint8*)value = trainProfileLED_PWM_value;
     break;
+    
   case U_CONFIG:
-    osal_memcpy(value,&trainProfileCONFIG_value,sizeof(trainProfileCONFIG_value));
+    osal_memcpy(value,&trainProfileCONFIG_value,TRAIN_OPERATE_CONFIG_LEN);
     break;
+    
   case U_DEF_CONFIG:
-    osal_memcpy(value,&trainProfileDEF_CONFIG_value,sizeof(trainProfileDEF_CONFIG_value));
+    osal_memcpy(value,&trainProfileDEF_CONFIG_value,TRAIN_STATIC_CONFIG_LEN);
     break;
+    
   case U_PROXADC1:
     *(uint8*)value = trainProfilePROXADC1_value;
     break;
+    
   case U_PROXADC2:
     *(uint8*)value = trainProfilePROXADC2_value;
     break;
+    
   case U_BATT:
     *(uint8*)value = trainProfileBATT_value;
     break;
+    
   case U_BATT_ADC:
     *(uint16*)value = trainProfileBATT_ADC_value;
     break;
+    
   case U_BATT_VOLT:
     *(float*)value = trainProfileBATT_VOLT_value;
     break;
+    
   default:
     ret = INVALIDPARAMETER;
     break;
@@ -803,9 +791,10 @@ static bStatus_t trainProfile_ReadAttrCB( uint16 connHandle, gattAttribute_t *pA
     switch ( uuid )
     {
     case TRAINPROFILE_BATT_UUID:
-      *pLen = 1;
+      *pLen = MIN(sizeof(trainProfileBATT_value),maxLen);
       pValue[0]=pAttr->pValue[0];
       break;
+      
     case TRAINPROFILE_DEV_NAME_UUID:
       if(scanRspData[0]>0){
         *pLen=MIN(scanRspData[0]-1,maxLen);
@@ -813,10 +802,12 @@ static bStatus_t trainProfile_ReadAttrCB( uint16 connHandle, gattAttribute_t *pA
       }
       else *pLen=0;
       break;
+      
     case TRAINPROFILE_DEV_APPE_UUID:
-        *pLen=MIN(2,maxLen);
+        *pLen=MIN(sizeof(trainProfileDEV_APPE_value),maxLen);
         osal_memcpy(pValue,pAttr->pValue,*pLen);
       break;
+      
     default:
       *pLen = 0;
       status = ATT_ERR_ATTR_NOT_FOUND;
@@ -836,11 +827,12 @@ static bStatus_t trainProfile_ReadAttrCB( uint16 connHandle, gattAttribute_t *pA
         pValue[0]=pAttr->pValue[0];
         break;
         
-        
+#ifdef BATT_ADC        
       case U_BATT_ADC:
-        *pLen=MIN(2,maxLen);
+        *pLen=MIN(sizeof(trainProfileBATT_ADC_value),maxLen);
         osal_memcpy(pValue,pAttr->pValue,*pLen);
         break;      
+#endif
         
       case U_BATT_VOLT:
         text = osal_mem_alloc(32);
@@ -854,20 +846,15 @@ static bStatus_t trainProfile_ReadAttrCB( uint16 connHandle, gattAttribute_t *pA
         }
         break;      
         
-        
       case U_CONFIG:
-        *pLen=MIN(sizeof(trainProfileCONFIG_value),maxLen);
+        *pLen=MIN(TRAIN_OPERATE_CONFIG_LEN,maxLen);
         osal_memcpy(pValue,pAttr->pValue,*pLen);
         break;      
         
-        
       case U_DEF_CONFIG:
-        *pLen=MIN(sizeof(trainProfileDEF_CONFIG_value),maxLen);
+        *pLen=MIN(TRAIN_STATIC_CONFIG_LEN,maxLen);
         osal_memcpy(pValue,pAttr->pValue,*pLen);
         break;
-        
-
-        
         
       default:
         *pLen = 0;
@@ -919,10 +906,9 @@ static bStatus_t trainProfile_WriteAttrCB( uint16 connHandle, gattAttribute_t *p
     switch ( uuid )
     {
 
-      case GATT_CLIENT_CHAR_CFG_UUID:
-        status = GATTServApp_ProcessCCCWriteReq( connHandle, pAttr, pValue, len,
-                                                 offset, GATT_CLIENT_CFG_NOTIFY );
-        break;
+    case GATT_CLIENT_CHAR_CFG_UUID:
+      status = GATTServApp_ProcessCCCWriteReq( connHandle, pAttr, pValue, len, offset, GATT_CLIENT_CFG_NOTIFY );
+      break;
         
     case TRAINPROFILE_DEV_NAME_UUID:
       if(len==0){
@@ -967,9 +953,9 @@ static bStatus_t trainProfile_WriteAttrCB( uint16 connHandle, gattAttribute_t *p
         
         
       case U_CONFIG:
-        if(len==sizeof(trainProfileCONFIG_value)){
-          osal_memcpy(pAttr->pValue,pValue,sizeof(trainProfileCONFIG_value));
-          notifyApp = UUID_LAST(pAttr->type.uuid);
+        if(len==TRAIN_OPERATE_CONFIG_LEN){
+          osal_memcpy(pAttr->pValue,pValue,TRAIN_OPERATE_CONFIG_LEN);
+          notifyApp = U_CONFIG;
         }
         else{
           status = ATT_ERR_INVALID_VALUE_SIZE;
@@ -978,9 +964,9 @@ static bStatus_t trainProfile_WriteAttrCB( uint16 connHandle, gattAttribute_t *p
         
         
       case U_DEF_CONFIG:
-        if(len==sizeof(trainProfileDEF_CONFIG_value)){
-          osal_memcpy(pAttr->pValue,pValue,sizeof(trainProfileDEF_CONFIG_value));
-          notifyApp = UUID_LAST(pAttr->type.uuid);
+        if(len==TRAIN_STATIC_CONFIG_LEN){
+          osal_memcpy(pAttr->pValue,pValue,TRAIN_STATIC_CONFIG_LEN);
+          notifyApp = U_DEF_CONFIG;
         }
         else{
           status = ATT_ERR_INVALID_VALUE_SIZE;
