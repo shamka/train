@@ -61,6 +61,22 @@ extern "C"
  * CONSTANTS
  */
 
+typedef struct _S_OP_CONFIG{
+  uint16 adc1;  // 0-off, any-wall
+  uint16 adc2;  // 0-off, any-fly
+  uint8 enLed1; // 1-on, 0-off
+  uint8 enLed2; // 1-on, 0-off
+  uint16 maxLed;           //limit LED
+  uint16 minMotor;         // Under this = 0
+  uint16 maxMotor;         //limit MOTOR
+}S_OP_CONFIG,*PS_OP_CONFIG;
+
+typedef struct _S_DEFAULT_CONFIG{
+  S_OP_CONFIG oper;        //operate settings 
+  uint16 motorWhenOnTrain; //When START - MOTOR PWM
+}S_DEFAULT_CONFIG,*PS_DEFAULT_CONFIG;
+   
+   
 #define SIZEOF(f) ((uint8)sizeof(f))
 #define makeUUID(uuid) 0xF1,0x4A,0x1D,0x9A,0x29,0x6F,0xB9,0xA9,0xD3,0x44,0x9D,0xE5,0x84,0x13,0x08,uuid,
 
@@ -73,8 +89,8 @@ extern "C"
 
 #define U_CONFIG 4
 #define U_DEF_CONFIG 5
-#define TRAIN_OPERATE_CONFIG_LEN 2
-#define TRAIN_STATIC_CONFIG_LEN 12
+#define TRAIN_OPERATE_CONFIG_LEN sizeof(S_OP_CONFIG)
+#define TRAIN_STATIC_CONFIG_LEN sizeof(S_DEFAULT_CONFIG)
   
   
 #define U_PROXADC1 6

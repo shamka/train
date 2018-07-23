@@ -80,6 +80,7 @@
 #include "hal_timer.h"
 
 #include "stdio.h"
+#include <string.h>
 
 /*********************************************************************
  * MACROS
@@ -155,7 +156,8 @@ halUARTCfg_t uart_conf;
 static CONST char hello[]="\r\nShamka's Train Version 1.00\r\n";
 #endif
 
-static CONST uint8 locNameDef[]={0x0F,GAP_ADTYPE_LOCAL_NAME_COMPLETE,'S','h','a','m','k','a','\'','s',' ','T','r','a','i','n',};
+//static CONST uint8 locNameDef[]={0x0F,GAP_ADTYPE_LOCAL_NAME_COMPLETE,'S','h','a','m','k','a','\'','s',' ','T','r','a','i','n',};
+static CONST uint8 locNameDef[]={0x09,GAP_ADTYPE_LOCAL_NAME_COMPLETE, 0xD9, 0x82, 0xD8, 0xB7, 0xD8, 0xA7, 0xD8, 0xB1};
 uint8 temp[32];
 
 static uint8 simpleBLEPeripheral_TaskID;   // Task ID for internal task/event processing
@@ -347,19 +349,20 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
   TrainProfile_AddService( GATT_ALL_SERVICES );
   // Setup the TrainProfile Characteristic Values
   {
-    osal_memset(temp,0,sizeof(temp));
+    memset(temp,0,sizeof(temp));
+    
+    TrainProfile_SetParameter(U_MOTOR_CURRENT, 2,&temp[0]);
+    TrainProfile_SetParameter(U_MOTOR_PWM, 2,&temp[0]);
+    
+    TrainProfile_SetParameter(U_LED_PWM, 2,&temp[0]);
+    
+    TrainProfile_SetParameter(U_PROXADC1, 2,&temp[0]);
+    TrainProfile_SetParameter(U_PROXADC2, 2,&temp[0]);
+
     osal_snv_read(SH_SNV_TRAIN_DEF_CONF,TRAIN_STATIC_CONFIG_LEN,temp);
     TrainProfile_SetParameter(U_DEF_CONFIG, TRAIN_STATIC_CONFIG_LEN,temp);
+    TrainProfile_SetParameter(U_CONFIG, TRAIN_OPERATE_CONFIG_LEN,temp);
     
-    TrainProfile_SetParameter(U_MOTOR_CURRENT, 1,&temp[3]);
-    TrainProfile_SetParameter(U_MOTOR_PWM, 1,&temp[3]);
-    
-    TrainProfile_SetParameter(U_LED_PWM, 1,&temp[2]);
-    
-    TrainProfile_SetParameter(U_CONFIG, 2,temp);
-    
-    TrainProfile_SetParameter(U_PROXADC1, 1,&temp[0]);
-    TrainProfile_SetParameter(U_PROXADC2, 1,&temp[1]);
     
   }
   // Register callback with SimpleGATTprofile
@@ -491,11 +494,14 @@ static void simpleBLEPeripheral_ProcessGATTMsg( gattMsgEvent_t *pMsg )
  *
  * @return  none
  */
+
 #ifdef PLUS_BROADCASTER
 static uint8 first_conn_flag = 0;
 #endif // PLUS_BROADCASTER
+uint8 curState;
 static void peripheralStateNotificationCB( gaprole_States_t newState )
 {
+  curState=newState;
   switch ( newState )
   {
     case GAPROLE_STARTED:
@@ -606,52 +612,97 @@ printText("state default\r\n");
                             // "CC2540 Slave" configurations
 }
 
-/*********************************************************************
- * @fn      performPeriodicTask
- *
- * @brief   Perform a periodic application task. This function gets
- *          called every five seconds as a result of the SBP_PERIODIC_EVT
- *          OSAL event. In this example, the value of the third
- *          characteristic in the SimpleGATTProfile service is retrieved
- *          from the profile, and then copied into the value of the
- *          the fourth characteristic.
- *
- * @param   none
- *
- * @return  none
- */
-static uint8 battary_update = 254;
+
+
+
+/***************************************************************************
+
+                              TRAIN LOGIC BLOCK
+
+****************************************************************************/
+
+
+static uint8 battary_update = 255;
+static uint8 prox_update = 255;
+static uint8 prox_leds = 0;
   
+// MOTOR PWM
+extern uint16 trainProfileMOTOR_PWM_value;
+// MOTOR Current
+extern uint16 trainProfileMOTOR_CURRENT_value;
+// LED PWM
+extern uint16 trainProfileLED_PWM_value;
+// OConfig
+extern S_OP_CONFIG trainProfileCONFIG_value;
+// SConfig
+extern S_DEFAULT_CONFIG trainProfileDEF_CONFIG_value;
+// ADC 1 - wall proximity
+extern uint16 trainProfilePROXADC1_value;
+// ADC 2 - Ground proximity
+extern uint16 trainProfilePROXADC2_value;
+
+void setMotor(uint16 cur_pwm, bool bt){
+  if(bt){
+    if(cur_pwm<trainProfileCONFIG_value.minMotor){cur_pwm=0;}
+    else if(cur_pwm>trainProfileCONFIG_value.maxMotor){cur_pwm=trainProfileCONFIG_value.maxMotor;};
+    if(trainProfileCONFIG_value.adc1>0 && trainProfilePROXADC1_value>0 && trainProfilePROXADC1_value<trainProfileCONFIG_value.adc1){
+      cur_pwm=0;
+    }
+  }
+  halTimer1SetChannelDuty(2,(cur_pwm));
+  TrainProfile_SetParameter(U_MOTOR_CURRENT,2,&cur_pwm);
+};
+void setLed(uint16 cur_pwm, bool bt){
+  halTimer1SetChannelDuty(1,(cur_pwm));
+};
+
+
+
+
 static void performPeriodicTask( void ) //80ms - 125ticks for 10sec
 {
-  battary_update++;
-  if(battary_update>250){// Update battary level every 20 seconds
-    battary_update=0;
-    HalAdcSetReference( HAL_ADC_REF_125V ); //1.20V
-    
-    *(uint16*)temp=HalAdcRead( HAL_ADC_CHANNEL_VDD, HAL_ADC_RESOLUTION_10 );
-    TrainProfile_SetParameter(U_BATT_ADC, 2,&temp);
-    
-    *(float*)&temp[4]=getVolt(*(uint16*)temp);
-    TrainProfile_SetParameter(U_BATT_VOLT, sizeof(float),&temp[4]);
-    
-    temp[0]=getPerc(*(float*)&temp[4]);
-    TrainProfile_SetParameter(U_BATT, 1,&temp);
+  if(curState==GAPROLE_CONNECTED){
+  // PROXIMITY UPDATE
+    if(prox_leds!=0){
+      if(prox_update>12){
+        
+        HalAdcSetReference( HAL_ADC_REF_AVDD );
+        
+        if((prox_leds&(1<<0))!=0){
+          PORT_GPIO_WALL=1;
+          *(uint16*)&temp[2]=HalAdcRead( HAL_ADC_CHN_AIN6, HAL_ADC_RESOLUTION_10 );
+          TrainProfile_SetParameter(U_PROXADC1, 2,&temp[2]);
+          PORT_GPIO_WALL=0;
+        }
+        
+        if((prox_leds&(1<<1))!=0){
+          PORT_GPIO_GROUND=1;
+          *(uint16*)&temp[4]=HalAdcRead( HAL_ADC_CHN_AIN7, HAL_ADC_RESOLUTION_10 );
+          TrainProfile_SetParameter(U_PROXADC2, 2,&temp[4]);
+          PORT_GPIO_GROUND=0;
+        }
+        
+        prox_update=0;
+      } else prox_update++;
+    }
+  // BATTERY UPDATE 
+    if(battary_update>250){// Update battary level every 20 seconds
+      battary_update=0;
+      HalAdcSetReference( HAL_ADC_REF_125V ); //1.20V
+      
+      *(uint16*)temp=HalAdcRead( HAL_ADC_CHANNEL_VDD, HAL_ADC_RESOLUTION_10 );
+      TrainProfile_SetParameter(U_BATT_ADC, 2,&temp);
+      
+      *(float*)&temp[4]=getVolt(*(uint16*)temp);
+      TrainProfile_SetParameter(U_BATT_VOLT, sizeof(float),&temp[4]);
+      
+      temp[0]=getPerc(*(float*)&temp[4]);
+      TrainProfile_SetParameter(U_BATT, 1,&temp);
+    } else battary_update++;
   }
 }
-
-/*********************************************************************
- * @fn      trainProfileChangeCB
- *
- * @brief   Callback from SimpleBLEProfile indicating a value change
- *
- * @param   paramID - parameter ID of the value that was changed.
- *
- * @return  none
- */
 static void trainProfileChangeCB( uint8 paramID )
 {
-  static uint16 cur_pwm = 0;
   printText("trainProfileChangeCB\r\n");
 
   switch( paramID )
@@ -667,20 +718,28 @@ static void trainProfileChangeCB( uint8 paramID )
     break;}
     
   case U_MOTOR_PWM:{
-    TrainProfile_GetParameter(U_MOTOR_PWM,&cur_pwm);
-    TrainProfile_SetParameter(U_MOTOR_CURRENT,2,&cur_pwm);
-    halTimer1SetChannelDuty(2,(cur_pwm));
-    battary_update=254;
+    setMotor(trainProfileMOTOR_PWM_value,true);
+    //battary_update=255;
     break;}
     
   case U_LED_PWM:{
-    TrainProfile_GetParameter(U_LED_PWM,&cur_pwm);
-    halTimer1SetChannelDuty(1,(cur_pwm));
+    setLed(trainProfileLED_PWM_value,true);
+    //battary_update=255;
     break;}
     
+  case U_CONFIG:
+    TrainProfile_GetParameter(U_CONFIG,temp);
+    
+    if(trainProfileCONFIG_value.enLed1!=0){ prox_leds|=(1<<0); }
+    else{                                    prox_leds&=~(1<<0);};
+    
+    if(trainProfileCONFIG_value.enLed2!=0){ prox_leds|=(1<<1); }
+    else{                                    prox_leds&=~(1<<1);};
+    
+    break;
+    
   case U_DEF_CONFIG:
-    TrainProfile_GetParameter(U_DEF_CONFIG,temp);
-    osal_snv_write(SH_SNV_TRAIN_DEF_CONF,TRAIN_STATIC_CONFIG_LEN,temp);
+    osal_snv_write(SH_SNV_TRAIN_DEF_CONF,TRAIN_STATIC_CONFIG_LEN,&trainProfileDEF_CONFIG_value);
     break;
   default:
     // should not reach here!

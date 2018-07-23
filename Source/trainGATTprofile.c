@@ -85,33 +85,33 @@ CONST uint8 trainProfileServUUID[] ={TRAINPROFILE_SERV_UUID};
 // MOTOR PWM
 CONST uint8 trainProfile_MOTOR_PWM_UUID[] ={TRAINPROFILE_MOTOR_PWM_UUID};
 CONST uint8 trainProfileMOTOR_PWM_access = GATT_PROP_READ|GATT_PROP_WRITE;
-static uint16 trainProfileMOTOR_PWM_value     = 0;
+uint16 trainProfileMOTOR_PWM_value     = 0;
 // MOTOR Current
 CONST uint8 trainProfile_MOTOR_CURRENT_UUID[] ={TRAINPROFILE_MOTOR_CURRENT_UUID};
 CONST uint8 trainProfileMOTOR_CURRENT_access = GATT_PROP_READ|GATT_PROP_INDICATE;
-static uint16 trainProfileMOTOR_CURRENT_value     = 0;
+uint16 trainProfileMOTOR_CURRENT_value     = 0;
 static gattCharCfg_t *trainProfile_MOTOR_CURRENT_conns=0;
 // LED PWM
 CONST uint8 trainProfile_LED_PWM_UUID[] ={TRAINPROFILE_LED_PWM_UUID};
 CONST uint8 trainProfileLED_PWM_access = GATT_PROP_READ|GATT_PROP_WRITE;
-static uint16 trainProfileLED_PWM_value     = 0;
+uint16 trainProfileLED_PWM_value     = 0;
 // OConfig
 CONST uint8 trainProfile_CONFIG_UUID[] ={TRAINPROFILE_CONFIG_UUID};
 CONST uint8 trainProfileCONFIG_access = GATT_PROP_READ|GATT_PROP_WRITE;
-static uint8 trainProfileCONFIG_value[TRAIN_OPERATE_CONFIG_LEN] = {0,0};//ignoreWall,ignoreGnd
+S_OP_CONFIG trainProfileCONFIG_value = {0,0};//ignoreWall,ignoreGnd
 // SConfig
 CONST uint8 trainProfile_DEF_CONFIG_UUID[] ={TRAINPROFILE_DEF_CONFIG_UUID};
 CONST uint8 trainProfileDEF_CONFIG_access = GATT_PROP_READ|GATT_PROP_WRITE;
-static uint8 trainProfileDEF_CONFIG_value[TRAIN_STATIC_CONFIG_LEN] = {0, 0, 0,0, 0,0, 0,0, 0,0, 0,0,};//ignoreWall,ignoreGnd,maxLed,maxMotor,motorWhenOnTrain
+S_DEFAULT_CONFIG trainProfileDEF_CONFIG_value = {0, 0, 0, 0, 0, 0};//ignoreWall,ignoreGnd,maxLed,maxMotor,motorWhenOnTrain,minMotor
 // ADC 1 - wall proximity
 CONST uint8 trainProfile_PROXADC1_UUID[] ={TRAINPROFILE_PROXADC1_UUID};
 CONST uint8 trainProfilePROXADC1_access = GATT_PROP_READ|GATT_PROP_INDICATE;
-static uint8 trainProfilePROXADC1_value     = 0;
+uint16 trainProfilePROXADC1_value     = 0;
 static gattCharCfg_t *trainProfile_PROXADC1_conns=0;
 // ADC 2 - Ground proximity
 CONST uint8 trainProfile_PROXADC2_UUID[] ={TRAINPROFILE_PROXADC2_UUID};
 CONST uint8 trainProfilePROXADC2_access = GATT_PROP_READ|GATT_PROP_INDICATE;
-static uint8 trainProfilePROXADC2_value     = 0;
+uint16 trainProfilePROXADC2_value     = 0;
 static gattCharCfg_t *trainProfile_PROXADC2_conns=0;
 
 // BATTARY service
@@ -539,7 +539,7 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
       scanRspData[0]=0;
     }
     else if(len<=29){
-      osal_memcpy(&scanRspData[2],value,len);
+      memcpy(&scanRspData[2],value,len);
       scanRspData[0]=len+1;
       scanRspData[1]=0x09;
     }
@@ -583,7 +583,7 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
     
   case U_CONFIG:{
     if(len==TRAIN_OPERATE_CONFIG_LEN){
-      osal_memcpy(&trainProfileCONFIG_value,value,TRAIN_OPERATE_CONFIG_LEN);
+      memcpy(&trainProfileCONFIG_value,value,TRAIN_OPERATE_CONFIG_LEN);
     }
     else{
       ret = bleInvalidRange;
@@ -592,7 +592,7 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
     
   case U_DEF_CONFIG:{
     if(len==TRAIN_STATIC_CONFIG_LEN){
-      osal_memcpy(&trainProfileDEF_CONFIG_value,value,TRAIN_STATIC_CONFIG_LEN);
+      memcpy(&trainProfileDEF_CONFIG_value,value,TRAIN_STATIC_CONFIG_LEN);
     }
     else{
       ret = bleInvalidRange;
@@ -600,12 +600,12 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
     break;}
     
   case U_PROXADC1:{
-    if(len==1){
-      if(trainProfilePROXADC1_value==*(uint8*)value){
+    if(len==2){
+      if(trainProfilePROXADC1_value==*(uint16*)value){
         break;
       }
-      trainProfilePROXADC1_value=*(uint8*)value;
-      GATTServApp_ProcessCharCfg( trainProfile_PROXADC1_conns, &trainProfilePROXADC1_value, FALSE,
+      trainProfilePROXADC1_value=*(uint16*)value;
+      GATTServApp_ProcessCharCfg( trainProfile_PROXADC1_conns, (uint8*)&trainProfilePROXADC1_value, FALSE,
                                     trainProfileAttrTbl, GATT_NUM_ATTRS( trainProfileAttrTbl ),
                                     INVALID_TASK_ID, trainProfile_ReadAttrCB );
     }
@@ -615,10 +615,10 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
     break;}
     
   case U_PROXADC2:{
-    if(len==1){
-      if(trainProfilePROXADC2_value!=*(uint8*)value){
-        trainProfilePROXADC2_value=*(uint8*)value;
-        GATTServApp_ProcessCharCfg( trainProfile_PROXADC2_conns, &trainProfilePROXADC2_value, FALSE,
+    if(len==2){
+      if(trainProfilePROXADC2_value!=*(uint16*)value){
+        trainProfilePROXADC2_value=*(uint16*)value;
+        GATTServApp_ProcessCharCfg( trainProfile_PROXADC2_conns, (uint8*)&trainProfilePROXADC2_value, FALSE,
                                     trainProfileAttrTbl, GATT_NUM_ATTRS( trainProfileAttrTbl ),
                                     INVALID_TASK_ID, trainProfile_ReadAttrCB );
       }
@@ -714,19 +714,19 @@ bStatus_t TrainProfile_GetParameter( uint8 param, void *value )
     break;
     
   case U_CONFIG:
-    osal_memcpy(value,&trainProfileCONFIG_value,TRAIN_OPERATE_CONFIG_LEN);
+    memcpy(value,&trainProfileCONFIG_value,TRAIN_OPERATE_CONFIG_LEN);
     break;
     
   case U_DEF_CONFIG:
-    osal_memcpy(value,&trainProfileDEF_CONFIG_value,TRAIN_STATIC_CONFIG_LEN);
+    memcpy(value,&trainProfileDEF_CONFIG_value,TRAIN_STATIC_CONFIG_LEN);
     break;
     
   case U_PROXADC1:
-    *(uint8*)value = trainProfilePROXADC1_value;
+    *(uint16*)value = trainProfilePROXADC1_value;
     break;
     
   case U_PROXADC2:
-    *(uint8*)value = trainProfilePROXADC2_value;
+    *(uint16*)value = trainProfilePROXADC2_value;
     break;
     
   case U_BATT:
@@ -798,14 +798,14 @@ static bStatus_t trainProfile_ReadAttrCB( uint16 connHandle, gattAttribute_t *pA
     case TRAINPROFILE_DEV_NAME_UUID:
       if(scanRspData[0]>0){
         *pLen=MIN(scanRspData[0]-1,maxLen);
-        osal_memcpy(pValue,pAttr->pValue,*pLen);
+        memcpy(pValue,pAttr->pValue,*pLen);
       }
       else *pLen=0;
       break;
       
     case TRAINPROFILE_DEV_APPE_UUID:
         *pLen=MIN(sizeof(trainProfileDEV_APPE_value),maxLen);
-        osal_memcpy(pValue,pAttr->pValue,*pLen);
+        memcpy(pValue,pAttr->pValue,*pLen);
       break;
       
     default:
@@ -822,19 +822,19 @@ static bStatus_t trainProfile_ReadAttrCB( uint16 connHandle, gattAttribute_t *pA
       case U_MOTOR_CURRENT:
       case U_LED_PWM:
         *pLen=MIN(2,maxLen);
-        osal_memcpy(pValue,pAttr->pValue,*pLen);
+        memcpy(pValue,pAttr->pValue,*pLen);
         break;      
 
       case U_PROXADC1:
       case U_PROXADC2:
-        *pLen = 1;
-        pValue[0]=pAttr->pValue[0];
+        *pLen=MIN(2,maxLen);
+        memcpy(pValue,pAttr->pValue,*pLen);
         break;
         
 #ifdef BATT_ADC        
       case U_BATT_ADC:
         *pLen=MIN(sizeof(trainProfileBATT_ADC_value),maxLen);
-        osal_memcpy(pValue,pAttr->pValue,*pLen);
+        memcpy(pValue,pAttr->pValue,*pLen);
         break;      
 #endif
         
@@ -842,7 +842,7 @@ static bStatus_t trainProfile_ReadAttrCB( uint16 connHandle, gattAttribute_t *pA
         text = osal_mem_alloc(32);
         if(text!=NULL){
           *pLen=MIN(sprintf((char *)text,"%#5.4fV",*(float*)pAttr->pValue),maxLen);
-          osal_memcpy(pValue,text,*pLen);
+          memcpy(pValue,text,*pLen);
           osal_mem_free(text);
         }
         else{
@@ -852,12 +852,12 @@ static bStatus_t trainProfile_ReadAttrCB( uint16 connHandle, gattAttribute_t *pA
         
       case U_CONFIG:
         *pLen=MIN(TRAIN_OPERATE_CONFIG_LEN,maxLen);
-        osal_memcpy(pValue,pAttr->pValue,*pLen);
+        memcpy(pValue,pAttr->pValue,*pLen);
         break;      
         
       case U_DEF_CONFIG:
         *pLen=MIN(TRAIN_STATIC_CONFIG_LEN,maxLen);
-        osal_memcpy(pValue,pAttr->pValue,*pLen);
+        memcpy(pValue,pAttr->pValue,*pLen);
         break;
         
       default:
@@ -922,7 +922,7 @@ static bStatus_t trainProfile_WriteAttrCB( uint16 connHandle, gattAttribute_t *p
       else if(len<=29){
         scanRspData[0]=len+1;
         scanRspData[1]=0x09;
-        osal_memcpy(&scanRspData[2],pValue,len);
+        memcpy(&scanRspData[2],pValue,len);
         notifyApp=U_DEV_NAME;
       }
       else{
@@ -947,7 +947,7 @@ static bStatus_t trainProfile_WriteAttrCB( uint16 connHandle, gattAttribute_t *p
       case U_MOTOR_PWM:
       case U_LED_PWM:
         if(len==2){
-          osal_memcpy(pAttr->pValue,pValue,2);
+          memcpy(pAttr->pValue,pValue,2);
           pAttr->pValue[0]=pValue[0];
           notifyApp = UUID_LAST(pAttr->type.uuid);
         }
@@ -959,7 +959,7 @@ static bStatus_t trainProfile_WriteAttrCB( uint16 connHandle, gattAttribute_t *p
         
       case U_CONFIG:
         if(len==TRAIN_OPERATE_CONFIG_LEN){
-          osal_memcpy(pAttr->pValue,pValue,TRAIN_OPERATE_CONFIG_LEN);
+          memcpy(pAttr->pValue,pValue,TRAIN_OPERATE_CONFIG_LEN);
           notifyApp = U_CONFIG;
         }
         else{
@@ -970,7 +970,7 @@ static bStatus_t trainProfile_WriteAttrCB( uint16 connHandle, gattAttribute_t *p
         
       case U_DEF_CONFIG:
         if(len==TRAIN_STATIC_CONFIG_LEN){
-          osal_memcpy(pAttr->pValue,pValue,TRAIN_STATIC_CONFIG_LEN);
+          memcpy(pAttr->pValue,pValue,TRAIN_STATIC_CONFIG_LEN);
           notifyApp = U_DEF_CONFIG;
         }
         else{

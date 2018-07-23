@@ -57,12 +57,21 @@
 
 #define PREDEC 5000
 
+void HalTimer1ON(void);
+inline void HalTimer1ON(){
+  T1CTL|=(2<<0);
+};
+
+void HalTimer1OFF(void);
+inline void HalTimer1OFF(void){
+  T1CTL&=~(0<<0);
+};
+
 void HalTimer1Init (halTimerCBack_t cBack){
   T1CC0L=LO_UINT16(PREDEC);
   T1CC0H=HI_UINT16(PREDEC);
   T1CNTL=0;
   T1CTL=(3<<2);
-  T1CTL|=(2<<0);
 };
 
 void halTimer1SetChannelDuty (uint8 channel, uint16 promill){
@@ -77,6 +86,7 @@ void halTimer1SetChannelDuty (uint8 channel, uint16 promill){
       T1CCTL2=(1<<3)|(1<<2)|(0<<0);
       break;
     }
+    if(((T1CCTL1&3)==0)&&((T1CCTL2&3)==0))HalTimer1OFF();
   }
   else{
     switch(channel){
@@ -103,6 +113,7 @@ void halTimer1SetChannelDuty (uint8 channel, uint16 promill){
       break;}
     }
   }
+  if(((T1CCTL1&3)!=0)||((T1CCTL2&3)!=0))HalTimer1ON();
 };
 
 
