@@ -51,10 +51,8 @@
  **************************************************************************************************/
 /* Hal Drivers */
 #include "hal_types.h"
-#include "hal_key.h"
 #include "hal_timer.h"
 #include "hal_drivers.h"
-#include "hal_led.h"
 
 /* OSAL */
 #include "OSAL.h"
@@ -86,23 +84,12 @@ int main(void)
 
   // Initialize board I/O
   InitBoard( OB_COLD );
-
-  /* Initialze the HAL driver */
-  HalDriverInit();
-
-  /* Initialize NV system */
-  osal_snv_init();
-
-  /* Initialize LL */
   
-  
+    
 //PWM Configure
 PERCFG |= BV(6);     //selected alt2 location
 P1SEL  |= BV(0); //P1.0 - CH2 - MOTOR
 P1SEL  |= BV(1); //P1.1 - CH1 - LED
-HalTimer1Init(0);
-halTimer1SetChannelDuty(HAL_T1_CH1,0);
-halTimer1SetChannelDuty(HAL_T1_CH2,0);
 
 //ADC Config
 APCFG  |= BV(6); //P0.6 - ADC 1
@@ -113,6 +100,18 @@ P1_2=0;
 P1_3=0;
 P1DIR |= BV(2); //P1.2 - LED1 - output
 P1DIR |= BV(3); //P1.3 - LED2 - output
+
+  /* Initialze the HAL driver */
+  HalDriverInit();
+
+  /* Initialize NV system */
+  osal_snv_init();
+
+  /* Initialize LL */
+  
+HalTimer1Init(0);
+halTimer1SetChannelDuty(HAL_T1_CH1,0);
+halTimer1SetChannelDuty(HAL_T1_CH2,0);
 
 
   /* Initialize the operating system */

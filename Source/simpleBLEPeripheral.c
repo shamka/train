@@ -77,6 +77,7 @@
 #endif
 
 #include "osal_snv.h"
+#include "hal_timer.h"
 
 #include "stdio.h"
 
@@ -619,9 +620,10 @@ printText("state default\r\n");
  *
  * @return  none
  */
+static uint8 battary_update = 254;
+  
 static void performPeriodicTask( void ) //80ms - 125ticks for 10sec
 {
-  static uint8 battary_update = 254;
   battary_update++;
   if(battary_update>250){// Update battary level every 20 seconds
     battary_update=0;
@@ -649,7 +651,7 @@ static void performPeriodicTask( void ) //80ms - 125ticks for 10sec
  */
 static void trainProfileChangeCB( uint8 paramID )
 {
-  static uint8 cur_pwm = 0;
+  static uint16 cur_pwm = 0;
   printText("trainProfileChangeCB\r\n");
 
   switch( paramID )
@@ -666,12 +668,14 @@ static void trainProfileChangeCB( uint8 paramID )
     
   case U_MOTOR_PWM:{
     TrainProfile_GetParameter(U_MOTOR_PWM,&cur_pwm);
-    TrainProfile_SetParameter(U_MOTOR_CURRENT,1,&cur_pwm);
+    TrainProfile_SetParameter(U_MOTOR_CURRENT,2,&cur_pwm);
+    halTimer1SetChannelDuty(2,(cur_pwm));
+    battary_update=254;
     break;}
     
   case U_LED_PWM:{
     TrainProfile_GetParameter(U_LED_PWM,&cur_pwm);
-    
+    halTimer1SetChannelDuty(1,(cur_pwm));
     break;}
     
   case U_DEF_CONFIG:

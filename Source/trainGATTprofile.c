@@ -85,16 +85,16 @@ CONST uint8 trainProfileServUUID[] ={TRAINPROFILE_SERV_UUID};
 // MOTOR PWM
 CONST uint8 trainProfile_MOTOR_PWM_UUID[] ={TRAINPROFILE_MOTOR_PWM_UUID};
 CONST uint8 trainProfileMOTOR_PWM_access = GATT_PROP_READ|GATT_PROP_WRITE;
-static uint8 trainProfileMOTOR_PWM_value     = 0;
+static uint16 trainProfileMOTOR_PWM_value     = 0;
 // MOTOR Current
 CONST uint8 trainProfile_MOTOR_CURRENT_UUID[] ={TRAINPROFILE_MOTOR_CURRENT_UUID};
 CONST uint8 trainProfileMOTOR_CURRENT_access = GATT_PROP_READ|GATT_PROP_INDICATE;
-static uint8 trainProfileMOTOR_CURRENT_value     = 0;
+static uint16 trainProfileMOTOR_CURRENT_value     = 0;
 static gattCharCfg_t *trainProfile_MOTOR_CURRENT_conns=0;
 // LED PWM
 CONST uint8 trainProfile_LED_PWM_UUID[] ={TRAINPROFILE_LED_PWM_UUID};
 CONST uint8 trainProfileLED_PWM_access = GATT_PROP_READ|GATT_PROP_WRITE;
-static uint8 trainProfileLED_PWM_value     = 0;
+static uint16 trainProfileLED_PWM_value     = 0;
 // OConfig
 CONST uint8 trainProfile_CONFIG_UUID[] ={TRAINPROFILE_CONFIG_UUID};
 CONST uint8 trainProfileCONFIG_access = GATT_PROP_READ|GATT_PROP_WRITE;
@@ -102,7 +102,7 @@ static uint8 trainProfileCONFIG_value[TRAIN_OPERATE_CONFIG_LEN] = {0,0};//ignore
 // SConfig
 CONST uint8 trainProfile_DEF_CONFIG_UUID[] ={TRAINPROFILE_DEF_CONFIG_UUID};
 CONST uint8 trainProfileDEF_CONFIG_access = GATT_PROP_READ|GATT_PROP_WRITE;
-static uint8 trainProfileDEF_CONFIG_value[TRAIN_STATIC_CONFIG_LEN] = {0,0,0,0,0};//ignoreWall,ignoreGnd,maxLed,maxMotor,motorWhenOnTrain
+static uint8 trainProfileDEF_CONFIG_value[TRAIN_STATIC_CONFIG_LEN] = {0, 0, 0,0, 0,0, 0,0, 0,0, 0,0,};//ignoreWall,ignoreGnd,maxLed,maxMotor,motorWhenOnTrain
 // ADC 1 - wall proximity
 CONST uint8 trainProfile_PROXADC1_UUID[] ={TRAINPROFILE_PROXADC1_UUID};
 CONST uint8 trainProfilePROXADC1_access = GATT_PROP_READ|GATT_PROP_INDICATE;
@@ -308,7 +308,7 @@ static gattAttribute_t trainProfileAttrTbl[] =
     { ATT_UUID_SIZE, trainProfile_MOTOR_CURRENT_UUID }, 
     GATT_PERMIT_READ, 
     0,                               
-    &trainProfileMOTOR_CURRENT_value  
+    (uint8*)&trainProfileMOTOR_CURRENT_value  
   },
   {
      {ATT_BT_UUID_SIZE , clientCharCfgUUID},
@@ -327,7 +327,7 @@ static gattAttribute_t trainProfileAttrTbl[] =
     { ATT_UUID_SIZE, trainProfile_LED_PWM_UUID }, 
     GATT_PERMIT_READ|GATT_PERMIT_WRITE,  
     0,                                    
-    (uint8 *)&trainProfileLED_PWM_value     
+    (uint8*)&trainProfileLED_PWM_value     
   },
   
   { 
@@ -549,8 +549,8 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
     break;}
     
   case U_MOTOR_PWM:{
-    if(len==1){
-      trainProfileMOTOR_PWM_value=*(uint8*)value;
+    if(len==2){
+      trainProfileMOTOR_PWM_value=*(uint16*)value;
     }
     else{
       ret = bleInvalidRange;
@@ -558,12 +558,12 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
     break;}
     
   case U_MOTOR_CURRENT:{
-    if(len==1){
-      if(trainProfileMOTOR_CURRENT_value==*(uint8*)value){
+    if(len==2){
+      if(trainProfileMOTOR_CURRENT_value==*(uint16*)value){
         break;
       }
-      trainProfileMOTOR_CURRENT_value=*(uint8*)value;
-      GATTServApp_ProcessCharCfg( trainProfile_MOTOR_CURRENT_conns, &trainProfileMOTOR_CURRENT_value, FALSE,
+      trainProfileMOTOR_CURRENT_value=*(uint16*)value;
+      GATTServApp_ProcessCharCfg( trainProfile_MOTOR_CURRENT_conns, (uint8*)&trainProfileMOTOR_CURRENT_value, FALSE,
                                     trainProfileAttrTbl, GATT_NUM_ATTRS( trainProfileAttrTbl ),
                                     INVALID_TASK_ID, trainProfile_ReadAttrCB );
     }
@@ -573,8 +573,8 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
     break;}
     
   case U_LED_PWM:{
-    if(len==1){
-      trainProfileLED_PWM_value=*(uint8*)value;
+    if(len==2){
+      trainProfileLED_PWM_value=*(uint16*)value;
     }
     else{
       ret = bleInvalidRange;
@@ -702,15 +702,15 @@ bStatus_t TrainProfile_GetParameter( uint8 param, void *value )
   switch ( param )
   {
   case U_MOTOR_PWM:
-    *(uint8*)value = trainProfileMOTOR_PWM_value;
+    *(uint16*)value = trainProfileMOTOR_PWM_value;
     break;
     
   case U_MOTOR_CURRENT:
-    *(uint8*)value = trainProfileMOTOR_CURRENT_value;
+    *(uint16*)value = trainProfileMOTOR_CURRENT_value;
     break;
     
   case U_LED_PWM:
-    *(uint8*)value = trainProfileLED_PWM_value;
+    *(uint16*)value = trainProfileLED_PWM_value;
     break;
     
   case U_CONFIG:
@@ -821,6 +821,10 @@ static bStatus_t trainProfile_ReadAttrCB( uint16 connHandle, gattAttribute_t *pA
       case U_MOTOR_PWM:
       case U_MOTOR_CURRENT:
       case U_LED_PWM:
+        *pLen=MIN(2,maxLen);
+        osal_memcpy(pValue,pAttr->pValue,*pLen);
+        break;      
+
       case U_PROXADC1:
       case U_PROXADC2:
         *pLen = 1;
@@ -942,7 +946,8 @@ static bStatus_t trainProfile_WriteAttrCB( uint16 connHandle, gattAttribute_t *p
         
       case U_MOTOR_PWM:
       case U_LED_PWM:
-        if(len==1){
+        if(len==2){
+          osal_memcpy(pAttr->pValue,pValue,2);
           pAttr->pValue[0]=pValue[0];
           notifyApp = UUID_LAST(pAttr->type.uuid);
         }

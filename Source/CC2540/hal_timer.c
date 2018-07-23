@@ -51,3 +51,65 @@
        for the users to implement their own application timer 
        functions.
 *********************************************************************/
+
+#include "hal_types.h"
+#include "hal_timer.h"
+
+#define PREDEC 5000
+
+void HalTimer1Init (halTimerCBack_t cBack){
+  T1CC0L=LO_UINT16(PREDEC);
+  T1CC0H=HI_UINT16(PREDEC);
+  T1CNTL=0;
+  T1CTL=(3<<2);
+  T1CTL|=(2<<0);
+};
+
+void halTimer1SetChannelDuty (uint8 channel, uint16 promill){
+  uint32 promill2=promill;
+  if(promill2>0)promill2=(promill2*PREDEC/65535)+1;
+  if(promill2==0){
+    switch(channel){
+    case 1:
+      T1CCTL1=(1<<3)|(1<<2)|(0<<0);
+      break;
+    case 2:
+      T1CCTL2=(1<<3)|(1<<2)|(0<<0);
+      break;
+    }
+  }
+  else{
+    switch(channel){
+    case 1:{
+      if(promill2>PREDEC){
+        T1CCTL1=(0<<3)|(1<<2)|(0<<0);
+      } else {
+        promill2--;
+        T1CC1L=LO_UINT16(promill2);
+        T1CCTL1=(1<<3)|(1<<2)|(0<<0);
+        T1CC1H=HI_UINT16(promill2);
+        T1CCTL1=(6<<3)|(1<<2)|(1<<0);
+      }
+      break;}
+    case 2:{
+      if(promill2>PREDEC){
+        T1CCTL2=(0<<3)|(1<<2)|(0<<0);
+      } else {
+        promill2--;
+        T1CC2L=LO_UINT16(promill2);
+        T1CC2H=HI_UINT16(promill2);
+        if((T1CCTL2&0x3)==0)T1CCTL2=(6<<3)|(1<<2)|(1<<0);
+      }
+      break;}
+    }
+  }
+};
+
+
+
+
+/*#pragma vector=T1_VECTOR
+__near_func __interrupt void T1_IRQ(void)
+{ 
+
+}*/

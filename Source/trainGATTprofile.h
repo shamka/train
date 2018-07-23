@@ -74,7 +74,7 @@ extern "C"
 #define U_CONFIG 4
 #define U_DEF_CONFIG 5
 #define TRAIN_OPERATE_CONFIG_LEN 2
-#define TRAIN_STATIC_CONFIG_LEN 5
+#define TRAIN_STATIC_CONFIG_LEN 12
   
   
 #define U_PROXADC1 6

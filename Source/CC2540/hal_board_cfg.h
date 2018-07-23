@@ -224,63 +224,11 @@ It is meant to be used by TI only */
   PREFETCH_ENABLE();                                                           \
 }
 
-/* Debounce */
-#define HAL_DEBOUNCE(expr)    { int i; for (i=0; i<500; i++) { if (!(expr)) i = 0; } }
-
-/* ----------- Push Buttons ---------- */
-#define HAL_PUSH_BUTTON1()        (PUSH1_POLARITY (PUSH1_SBIT))
-#define HAL_PUSH_BUTTON2()        (PUSH2_POLARITY (PUSH2_SBIT))
-#define HAL_PUSH_BUTTON3()        (0)
-#define HAL_PUSH_BUTTON4()        (0)
-#define HAL_PUSH_BUTTON5()        (0)
-#define HAL_PUSH_BUTTON6()        (0)
-
-/* XNV */
-
-#define XNV_SPI_BEGIN()             st(P1_3 = 0;)
-#define XNV_SPI_TX(x)               st(U1CSR &= ~0x02; U1DBUF = (x);)
-#define XNV_SPI_RX()                U1DBUF
-#define XNV_SPI_WAIT_RXRDY()        st(while (!(U1CSR & 0x02));)
-#define XNV_SPI_END()               st(P1_3 = 1;)
-
-// The TI reference design uses UART1 Alt. 2 in SPI mode.
-#define XNV_SPI_INIT() \
-st( \
-  /* Mode select UART1 SPI Mode as master. */\
-  U1CSR = 0; \
-  \
-  /* Setup for 115200 baud. */\
-  U1GCR = 11; \
-  U1BAUD = 216; \
-  \
-  /* Set bit order to MSB */\
-  U1GCR |= BV(5); \
-  \
-  /* Set UART1 I/O to alternate 2 location on P1 pins. */\
-  PERCFG |= 0x02;  /* U1CFG */\
-  \
-  /* Select peripheral function on I/O pins but SS is left as GPIO for separate control. */\
-  P1SEL |= 0xE0;  /* SELP1_[7:4] */\
-  /* P1.1,2,3: reset, LCD CS, XNV CS. */\
-  P1SEL &= ~0x0E; \
-  P1 |= 0x0E; \
-  P1_1 = 0; \
-  P1DIR |= 0x0E; \
-  \
-  /* Give UART1 priority over Timer3. */\
-  P2SEL &= ~0x20;  /* PRI2P1 */\
-  \
-  /* When SPI config is complete, enable it. */\
-  U1CSR |= 0x40; \
-  /* Release XNV reset. */\
-  P1_1 = 1; \
-)
-
 /* Driver Configuration */
 
 /* Set to TRUE enable H/W TIMER usage, FALSE disable it */
 #ifndef HAL_TIMER
-#define HAL_TIMER FALSE
+#define HAL_TIMER TRUE
 #endif
 
 /* Set to TRUE enable ADC usage, FALSE disable it */
