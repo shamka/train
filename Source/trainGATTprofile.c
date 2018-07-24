@@ -98,11 +98,11 @@ uint16 trainProfileLED_PWM_value     = 0;
 // OConfig
 CONST uint8 trainProfile_CONFIG_UUID[] ={TRAINPROFILE_CONFIG_UUID};
 CONST uint8 trainProfileCONFIG_access = GATT_PROP_READ|GATT_PROP_WRITE;
-S_OP_CONFIG trainProfileCONFIG_value = {0,0};//ignoreWall,ignoreGnd
+S_OP_CONFIG trainProfileCONFIG_value;//ignoreWall,ignoreGnd
 // SConfig
 CONST uint8 trainProfile_DEF_CONFIG_UUID[] ={TRAINPROFILE_DEF_CONFIG_UUID};
 CONST uint8 trainProfileDEF_CONFIG_access = GATT_PROP_READ|GATT_PROP_WRITE;
-S_DEFAULT_CONFIG trainProfileDEF_CONFIG_value = {0, 0, 0, 0, 0, 0};//ignoreWall,ignoreGnd,maxLed,maxMotor,motorWhenOnTrain,minMotor
+S_DEFAULT_CONFIG trainProfileDEF_CONFIG_value;//ignoreWall,ignoreGnd,maxLed,maxMotor,motorWhenOnTrain,minMotor
 // ADC 1 - wall proximity
 CONST uint8 trainProfile_PROXADC1_UUID[] ={TRAINPROFILE_PROXADC1_UUID};
 CONST uint8 trainProfilePROXADC1_access = GATT_PROP_READ|GATT_PROP_INDICATE;
@@ -559,9 +559,6 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
     
   case U_MOTOR_CURRENT:{
     if(len==2){
-      if(trainProfileMOTOR_CURRENT_value==*(uint16*)value){
-        break;
-      }
       trainProfileMOTOR_CURRENT_value=*(uint16*)value;
       GATTServApp_ProcessCharCfg( trainProfile_MOTOR_CURRENT_conns, (uint8*)&trainProfileMOTOR_CURRENT_value, FALSE,
                                     trainProfileAttrTbl, GATT_NUM_ATTRS( trainProfileAttrTbl ),
@@ -601,9 +598,6 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
     
   case U_PROXADC1:{
     if(len==2){
-      if(trainProfilePROXADC1_value==*(uint16*)value){
-        break;
-      }
       trainProfilePROXADC1_value=*(uint16*)value;
       GATTServApp_ProcessCharCfg( trainProfile_PROXADC1_conns, (uint8*)&trainProfilePROXADC1_value, FALSE,
                                     trainProfileAttrTbl, GATT_NUM_ATTRS( trainProfileAttrTbl ),
@@ -616,12 +610,10 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
     
   case U_PROXADC2:{
     if(len==2){
-      if(trainProfilePROXADC2_value!=*(uint16*)value){
         trainProfilePROXADC2_value=*(uint16*)value;
         GATTServApp_ProcessCharCfg( trainProfile_PROXADC2_conns, (uint8*)&trainProfilePROXADC2_value, FALSE,
                                     trainProfileAttrTbl, GATT_NUM_ATTRS( trainProfileAttrTbl ),
                                     INVALID_TASK_ID, trainProfile_ReadAttrCB );
-      }
 
     }
     else{
@@ -645,15 +637,14 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
 
   case U_BATT_ADC:{
     if(len==2){
-      if(trainProfileBATT_ADC_value==*(uint16*)value){
-        break;
-      }
-      trainProfileBATT_ADC_value=*(uint16*)value;
+      if(trainProfileBATT_ADC_value!=*(uint16*)value){
+        trainProfileBATT_ADC_value=*(uint16*)value;
 #ifdef BATT_ADC    
-      GATTServApp_ProcessCharCfg( trainProfile_BATT_ADC_conns, (uint8*)&trainProfileBATT_ADC_value, FALSE,
+        GATTServApp_ProcessCharCfg( trainProfile_BATT_ADC_conns, (uint8*)&trainProfileBATT_ADC_value, FALSE,
                                     trainBattaryProfileAttrTbl, GATT_NUM_ATTRS( trainBattaryProfileAttrTbl ),
                                     INVALID_TASK_ID, trainProfile_ReadAttrCB );
 #endif
+      }
     }
     else{
       ret = bleInvalidRange;
@@ -662,13 +653,12 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
 
   case U_BATT_VOLT:{
     if(len==sizeof(float)){
-      if(trainProfileBATT_VOLT_value==*(float*)value){
-        break;
+      if(trainProfileBATT_VOLT_value!=*(float*)value){
+        trainProfileBATT_VOLT_value=*(float*)value;
+        GATTServApp_ProcessCharCfg( trainProfile_BATT_VOLT_conns, (uint8*)&trainProfileBATT_VOLT_value, FALSE,
+                                      trainBattaryProfileAttrTbl, GATT_NUM_ATTRS( trainBattaryProfileAttrTbl ),
+                                      INVALID_TASK_ID, trainProfile_ReadAttrCB );
       }
-      trainProfileBATT_VOLT_value=*(float*)value;
-      GATTServApp_ProcessCharCfg( trainProfile_BATT_VOLT_conns, (uint8*)&trainProfileBATT_VOLT_value, FALSE,
-                                    trainBattaryProfileAttrTbl, GATT_NUM_ATTRS( trainBattaryProfileAttrTbl ),
-                                    INVALID_TASK_ID, trainProfile_ReadAttrCB );
     }
     else{
       ret = bleInvalidRange;

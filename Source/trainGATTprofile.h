@@ -74,6 +74,7 @@ typedef struct _S_OP_CONFIG{
 typedef struct _S_DEFAULT_CONFIG{
   S_OP_CONFIG oper;        //operate settings 
   uint16 motorWhenOnTrain; //When START - MOTOR PWM
+  uint16 ledWhenOnTrain;   //When START - LED PWM
 }S_DEFAULT_CONFIG,*PS_DEFAULT_CONFIG;
    
    
