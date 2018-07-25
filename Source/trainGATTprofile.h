@@ -62,7 +62,8 @@ extern "C"
  */
 
 typedef struct _S_OP_CONFIG{
-  uint16 adc1;  // 0-off, any-wall
+  uint16 adc1_max;  // 0-off, any-wall - stop
+  uint16 adc1_min;  // 0-off, any-wall - go to target
   uint16 adc2;  // 0-off, any-fly
   uint8 enLed1; // 1-on, 0-off
   uint8 enLed2; // 1-on, 0-off

@@ -30,7 +30,7 @@ void setMotor(uint16 cur_pwm, bool bt){
     else if(trainProfileCONFIG_value.maxMotor>0 && cur_pwm>trainProfileCONFIG_value.maxMotor){cur_pwm=trainProfileCONFIG_value.maxMotor;};
 //    
     if(bt){
-      if(trainProfileCONFIG_value.adc1>0 && (trainProfilePROXADC1_value==0 || trainProfilePROXADC1_value<trainProfileCONFIG_value.adc1)){
+      if(trainProfileCONFIG_value.adc1_max>0 && (trainProfilePROXADC1_value!=0 || trainProfilePROXADC1_value>trainProfileCONFIG_value.adc1_max)){
         cur_pwm=0;
       }
     }
@@ -54,17 +54,18 @@ void setLed(uint16 cur_pwm, bool bt){
 static void performPeriodicTask( void ) //80ms - 125ticks for 10sec
 {
   // PROXIMITY UPDATE
-  if( trainProfileCONFIG_value.adc1!=0 || trainProfileCONFIG_value.adc2!=0 ){
+  if( trainProfileCONFIG_value.adc1_max!=0 || trainProfileCONFIG_value.adc2!=0 ){
     HalAdcSetReference( HAL_ADC_REF_AVDD );
     
-    if(trainProfileCONFIG_value.adc1!=0){
+    if(trainProfileCONFIG_value.adc1_max!=0){
       if(trainProfileCONFIG_value.enLed1!=0){
+        PORT_GPIO_WALL=1;
         PORT_GPIO_WALL=1;
         PORT_GPIO_WALL=1;
       }
       trainProfilePROXADC1_value=HalAdcRead( HAL_ADC_CHN_AIN6, HAL_ADC_RESOLUTION_10 );
       PORT_GPIO_WALL=0;
-      if(trainProfilePROXADC1_value<trainProfileCONFIG_value.adc1){
+      if(trainProfilePROXADC1_value>trainProfileCONFIG_value.adc1_max){
         setMotor(0,false);
       } else {
         setMotor(trainProfileMOTOR_PWM_value,false);
@@ -73,6 +74,7 @@ static void performPeriodicTask( void ) //80ms - 125ticks for 10sec
 
     if(trainProfileCONFIG_value.adc2!=0){
       if(trainProfileCONFIG_value.enLed2!=0){
+        PORT_GPIO_GROUND=1;
         PORT_GPIO_GROUND=1;
         PORT_GPIO_GROUND=1;
       }
