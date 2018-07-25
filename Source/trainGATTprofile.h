@@ -62,14 +62,15 @@ extern "C"
  */
 
 typedef struct _S_OP_CONFIG{
-  uint16 adc1_max;  // 0-off, any-wall - stop
-  uint16 adc1_min;  // 0-off, any-wall - go to target
-  uint16 adc2;  // 0-off, any-fly
+  int16 adc1_max;  // 0-off, any-wall - stop
+  int16 adc1_min;  // 0-off, any-wall - go to target
+  int16 adc2;  // 0-off, any-fly
   uint8 enLed1; // 1-on, 0-off
   uint8 enLed2; // 1-on, 0-off
   uint16 maxLed;           //limit LED
   uint16 minMotor;         // Under this = 0
   uint16 maxMotor;         //limit MOTOR
+  uint16 flags;         //Settings   
 }S_OP_CONFIG,*PS_OP_CONFIG;
 
 typedef struct _S_DEFAULT_CONFIG{

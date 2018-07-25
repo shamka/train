@@ -98,9 +98,6 @@ void InitBoard( uint8 level )
   {
     // Interrupts off
     osal_int_disable( INTS_ALL );
-    // Turn all LEDs off
-    // Check for Brown-Out reset
-//    ChkReset();
   }
   else  // !OB_COLD
   {
@@ -128,39 +125,6 @@ uint16 Onboard_rand( void )
 }
 
 /*********************************************************************
- * @fn      _itoa
- *
- * @brief   convert a 16bit number to ASCII
- *
- * @param   num -
- *          buf -
- *          radix -
- *
- * @return  void
- *
- *********************************************************************/
-void _itoa(uint16 num, uint8 *buf, uint8 radix)
-{
-  char c,i;
-  uint8 *p, rst[5];
-
-  p = rst;
-  for ( i=0; i<5; i++,p++ )
-  {
-    c = num % radix;  // Isolate a digit
-    *p = c + (( c < 10 ) ? '0' : '7');  // Convert to Ascii
-    num /= radix;
-    if ( !num )
-      break;
-  }
-
-  for ( c=0 ; c<=i; c++ )
-    *buf++ = *p--;  // Reverse character order
-
-  *buf = '\0';
-}
-
-/*********************************************************************
  * @fn      Onboard_soft_reset
  *
  * @brief   Effect a soft reset.
@@ -172,8 +136,7 @@ void _itoa(uint16 num, uint8 *buf, uint8 radix)
  *********************************************************************/
 __near_func void Onboard_soft_reset( void )
 {
-  HAL_DISABLE_INTERRUPTS();
-  asm("LJMP 0x0");
+  HAL_SYSTEM_RESET();
 }
 /*********************************************************************
 *********************************************************************/

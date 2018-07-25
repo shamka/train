@@ -19,33 +19,28 @@ extern S_OP_CONFIG trainProfileCONFIG_value;
 // SConfig
 extern S_DEFAULT_CONFIG trainProfileDEF_CONFIG_value;
 // ADC 1 - wall proximity
-extern uint16 trainProfilePROXADC1_value;
+extern int16 trainProfilePROXADC1_value;
 // ADC 2 - Ground proximity
-extern uint16 trainProfilePROXADC2_value;
+extern int16 trainProfilePROXADC2_value;
 
 void setMotor(uint16 cur_pwm, bool bt){
-  if(cur_pwm!=0){
+  if(cur_pwm==13){
+    Onboard_soft_reset();
+  }
+  if(bt && cur_pwm!=0){
 // motor limities    
     if(cur_pwm<trainProfileCONFIG_value.minMotor){cur_pwm=0;}
     else if(trainProfileCONFIG_value.maxMotor>0 && cur_pwm>trainProfileCONFIG_value.maxMotor){cur_pwm=trainProfileCONFIG_value.maxMotor;};
-//    
-    if(bt){
-      if(trainProfileCONFIG_value.adc1_max>0 && (trainProfilePROXADC1_value!=0 || trainProfilePROXADC1_value>trainProfileCONFIG_value.adc1_max)){
-        cur_pwm=0;
-      }
-    }
   }
   halTimer1SetChannelDuty(2,cur_pwm);
   TrainProfile_SetParameter(U_MOTOR_CURRENT,2,&cur_pwm);
 };
 void setLed(uint16 cur_pwm, bool bt){
-  if(cur_pwm!=0 && bt){
+  if(bt && cur_pwm!=0){
 // led limities    
     if(cur_pwm>trainProfileCONFIG_value.maxLed){cur_pwm=trainProfileCONFIG_value.maxLed;};
   }
   halTimer1SetChannelDuty(1,cur_pwm);
-  //TrainProfile_SetParameter(U_LED_PWM,2,&cur_pwm);
-  trainProfileLED_PWM_value=cur_pwm;
 };
 
 
@@ -59,28 +54,21 @@ static void performPeriodicTask( void ) //80ms - 125ticks for 10sec
     
     if(trainProfileCONFIG_value.adc1_max!=0){
       if(trainProfileCONFIG_value.enLed1!=0){
+        int16 withOutLed=HalAdcRead( PORT_ADC_WALL, HAL_ADC_RESOLUTION_10 );
         PORT_GPIO_WALL=1;
-        PORT_GPIO_WALL=1;
-        PORT_GPIO_WALL=1;
+        trainProfilePROXADC1_value=HalAdcRead( PORT_ADC_WALL, HAL_ADC_RESOLUTION_10 );
+        PORT_GPIO_WALL=0;
+        trainProfilePROXADC1_value-=withOutLed;
+      }else{
+        trainProfilePROXADC1_value=HalAdcRead( PORT_ADC_WALL, HAL_ADC_RESOLUTION_10 );
       }
-      trainProfilePROXADC1_value=HalAdcRead( HAL_ADC_CHN_AIN6, HAL_ADC_RESOLUTION_10 );
-      PORT_GPIO_WALL=0;
       if(trainProfilePROXADC1_value>trainProfileCONFIG_value.adc1_max){
         setMotor(0,false);
-      } else {
-        setMotor(trainProfileMOTOR_PWM_value,false);
+      }else{
+        setMotor(trainProfileMOTOR_PWM_value,true);
       }
     }
 
-    if(trainProfileCONFIG_value.adc2!=0){
-      if(trainProfileCONFIG_value.enLed2!=0){
-        PORT_GPIO_GROUND=1;
-        PORT_GPIO_GROUND=1;
-        PORT_GPIO_GROUND=1;
-      }
-      trainProfilePROXADC2_value=HalAdcRead( HAL_ADC_CHN_AIN7, HAL_ADC_RESOLUTION_10 );
-      PORT_GPIO_GROUND=0;
-    }
     
     if(curState==GAPROLE_CONNECTED){
       // update BT values;
@@ -132,16 +120,16 @@ static void trainProfileChangeCB( uint8 paramID )
     //battary_update=255;
     break;}
     
-  case U_CONFIG:
-    setLed(trainProfileLED_PWM_value,true);
-    setMotor(trainProfileMOTOR_PWM_value,true);
-    break;
-    
   case U_DEF_CONFIG:
 
     osal_snv_write(SH_SNV_TRAIN_DEF_CONF,TRAIN_STATIC_CONFIG_LEN,&trainProfileDEF_CONFIG_value);
     TrainProfile_SetParameter(U_CONFIG, TRAIN_OPERATE_CONFIG_LEN,&trainProfileDEF_CONFIG_value);
+    
+  case U_CONFIG:
+    if(trainProfileCONFIG_value.adc1_max==0)TrainProfile_SetParameter(U_PROXADC1, 2,&trainProfileCONFIG_value.adc1_max);
+    if(trainProfileCONFIG_value.adc2==0)TrainProfile_SetParameter(U_PROXADC2, 2,&trainProfileCONFIG_value.adc2);
     break;
+
   default:
     // should not reach here!
     break;
@@ -162,5 +150,9 @@ void initTrain(void){
   TrainProfile_SetParameter(U_MOTOR_PWM, 2,&trainProfileDEF_CONFIG_value.motorWhenOnTrain);
   setMotor(trainProfileDEF_CONFIG_value.motorWhenOnTrain,true);
   setLed(trainProfileDEF_CONFIG_value.ledWhenOnTrain,true);
+  
+  // INIT ADC
+  HalAdcRead( PORT_ADC_WALL, HAL_ADC_RESOLUTION_10 );
+  HalAdcRead( PORT_ADC_GROUND, HAL_ADC_RESOLUTION_10 );
   
 }

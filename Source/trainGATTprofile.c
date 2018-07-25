@@ -106,12 +106,12 @@ S_DEFAULT_CONFIG trainProfileDEF_CONFIG_value;//ignoreWall,ignoreGnd,maxLed,maxM
 // ADC 1 - wall proximity
 CONST uint8 trainProfile_PROXADC1_UUID[] ={TRAINPROFILE_PROXADC1_UUID};
 CONST uint8 trainProfilePROXADC1_access = GATT_PROP_READ|GATT_PROP_INDICATE;
-uint16 trainProfilePROXADC1_value     = 0;
+int16 trainProfilePROXADC1_value     = 0;
 static gattCharCfg_t *trainProfile_PROXADC1_conns=0;
 // ADC 2 - Ground proximity
 CONST uint8 trainProfile_PROXADC2_UUID[] ={TRAINPROFILE_PROXADC2_UUID};
 CONST uint8 trainProfilePROXADC2_access = GATT_PROP_READ|GATT_PROP_INDICATE;
-uint16 trainProfilePROXADC2_value     = 0;
+int16 trainProfilePROXADC2_value     = 0;
 static gattCharCfg_t *trainProfile_PROXADC2_conns=0;
 
 // BATTARY service
@@ -136,7 +136,7 @@ static gattCharCfg_t *trainProfile_BATT_ADC_conns=0;
 
 // device name
 CONST uint8 trainProfile_DEV_NAME_UUID[] ={LO_UINT16(TRAINPROFILE_DEV_NAME_UUID),HI_UINT16(TRAINPROFILE_DEV_NAME_UUID)};
-CONST uint8 trainProfileDEV_NAME_access = GATT_PROP_READ|GATT_PROP_WRITE_NO_RSP;
+CONST uint8 trainProfileDEV_NAME_access = GATT_PROP_READ|GATT_PROP_WRITE;
 extern uint8 scanRspData[31];
 // appearance
 CONST uint8 trainProfile_DEV_APPE_UUID[] ={LO_UINT16(TRAINPROFILE_DEV_APPE_UUID),HI_UINT16(TRAINPROFILE_DEV_APPE_UUID)};
@@ -598,7 +598,7 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
     
   case U_PROXADC1:{
     if(len==2){
-      trainProfilePROXADC1_value=*(uint16*)value;
+      trainProfilePROXADC1_value=*(int16*)value;
       GATTServApp_ProcessCharCfg( trainProfile_PROXADC1_conns, (uint8*)&trainProfilePROXADC1_value, FALSE,
                                     trainProfileAttrTbl, GATT_NUM_ATTRS( trainProfileAttrTbl ),
                                     INVALID_TASK_ID, trainProfile_ReadAttrCB );
@@ -610,7 +610,7 @@ bStatus_t TrainProfile_SetParameter( uint8 param, uint8 len, void *value )
     
   case U_PROXADC2:{
     if(len==2){
-        trainProfilePROXADC2_value=*(uint16*)value;
+        trainProfilePROXADC2_value=*(int16*)value;
         GATTServApp_ProcessCharCfg( trainProfile_PROXADC2_conns, (uint8*)&trainProfilePROXADC2_value, FALSE,
                                     trainProfileAttrTbl, GATT_NUM_ATTRS( trainProfileAttrTbl ),
                                     INVALID_TASK_ID, trainProfile_ReadAttrCB );
@@ -712,11 +712,11 @@ bStatus_t TrainProfile_GetParameter( uint8 param, void *value )
     break;
     
   case U_PROXADC1:
-    *(uint16*)value = trainProfilePROXADC1_value;
+    *(int16*)value = trainProfilePROXADC1_value;
     break;
     
   case U_PROXADC2:
-    *(uint16*)value = trainProfilePROXADC2_value;
+    *(int16*)value = trainProfilePROXADC2_value;
     break;
     
   case U_BATT:
