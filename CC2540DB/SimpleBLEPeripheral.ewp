@@ -839,7 +839,7 @@
                 </option>
                 <option>
                     <name>XclFile</name>
-                    <state>C:\Texas Instruments\BLE-CC254x-1.4.2.2\Projects\ble\_TRAIN\Source\linker\ti_51ew_cc2540b.xcl</state>
+                    <state>$PROJ_DIR$\..\Source\linker\ti_51ew_cc2540b.xcl</state>
                 </option>
                 <option>
                     <name>XclFileSlave</name>
