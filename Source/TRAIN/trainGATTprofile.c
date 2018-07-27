@@ -142,7 +142,14 @@ extern uint8 scanRspData[31];
 CONST uint8 trainProfile_DEV_APPE_UUID[] ={LO_UINT16(TRAINPROFILE_DEV_APPE_UUID),HI_UINT16(TRAINPROFILE_DEV_APPE_UUID)};
 CONST uint8 trainProfileDEV_APPE_access = GATT_PROP_READ;
 CONST uint16 trainProfileDEV_APPE_value = GAP_APPEARE_GENERIC_HID;
-
+// MAC
+CONST uint8 trainProfile_DEV_MAC_UUID[] ={TRAINPROFILE_DEV_MAC_UUID};
+CONST uint8 trainProfileDEV_MAC_access = GATT_PROP_READ|GATT_PROP_WRITE;
+volatile __no_init const uint8 trainProfileDEV_MAC_value[6] @ 0x7800;
+// MAC0
+CONST uint8 trainProfile_DEV_MAC0_UUID[] ={TRAINPROFILE_DEV_MAC0_UUID};
+CONST uint8 trainProfileDEV_MAC0_access = GATT_PROP_READ;
+volatile __no_init const uint8 trainProfileDEV_MAC0_value[6] @ 0x780E;
 /*********************************************************************
  * EXTERNAL VARIABLES
  */
@@ -201,6 +208,33 @@ static gattAttribute_t trainDeviceProfileAttrTbl[] =
     GATT_PERMIT_READ|GATT_PERMIT_WRITE,
     0,
     (uint8*)&trainProfileDEV_APPE_value
+  },
+
+  
+  { 
+    { ATT_BT_UUID_SIZE, characterUUID }, 
+    GATT_PERMIT_READ,     
+    0,
+    (uint8 *)&trainProfileDEV_MAC0_access
+  },
+  { 
+    { ATT_UUID_SIZE, trainProfile_DEV_MAC0_UUID },
+    GATT_PERMIT_READ|GATT_PERMIT_WRITE,
+    0,
+    (uint8*)&trainProfileDEV_MAC0_value
+  },
+
+  { 
+    { ATT_BT_UUID_SIZE, characterUUID }, 
+    GATT_PERMIT_READ,     
+    0,
+    (uint8 *)&trainProfileDEV_MAC_access
+  },
+  { 
+    { ATT_UUID_SIZE, trainProfile_DEV_MAC_UUID },
+    GATT_PERMIT_READ|GATT_PERMIT_WRITE,
+    0,
+    (uint8*)&trainProfileDEV_MAC_value
   },
 
 };
@@ -691,6 +725,14 @@ bStatus_t TrainProfile_GetParameter( uint8 param, void *value )
   bStatus_t ret = SUCCESS;
   switch ( param )
   {
+  case U_DEV_MAC0:
+    memcpy(value,(uint8*)&trainProfileDEV_MAC0_value,6);
+    break;
+    
+  case U_DEV_MAC:
+    memcpy(value,(uint8*)&trainProfileDEV_MAC_value,6);
+    break;
+    
   case U_MOTOR_PWM:
     *(uint16*)value = trainProfileMOTOR_PWM_value;
     break;
@@ -769,10 +811,10 @@ static bStatus_t trainProfile_ReadAttrCB( uint16 connHandle, gattAttribute_t *pA
   }
   
   // Make sure it's not a blob operation (no attributes in the profile are long)
-  if ( offset > 0 || maxLen==0)
+  /*if ( offset > 0 || maxLen==0)
   {
     return ( ATT_ERR_ATTR_NOT_LONG );
-  }
+  }*/
  
   if ( pAttr->type.len == ATT_BT_UUID_SIZE )
   {
@@ -787,8 +829,8 @@ static bStatus_t trainProfile_ReadAttrCB( uint16 connHandle, gattAttribute_t *pA
       
     case TRAINPROFILE_DEV_NAME_UUID:
       if(scanRspData[0]>0){
-        *pLen=MIN(scanRspData[0]-1,maxLen);
-        memcpy(pValue,pAttr->pValue,*pLen);
+        *pLen=MIN(scanRspData[0]-1-offset,maxLen);
+        memcpy(pValue,&pAttr->pValue[offset],*pLen);
       }
       else *pLen=0;
       break;
@@ -850,6 +892,13 @@ static bStatus_t trainProfile_ReadAttrCB( uint16 connHandle, gattAttribute_t *pA
         memcpy(pValue,pAttr->pValue,*pLen);
         break;
         
+      case U_DEV_MAC:
+      case U_DEV_MAC0:
+        *pLen=MIN(6,maxLen);
+        memcpy(pValue,pAttr->pValue,*pLen);
+        break;
+        
+
       default:
         *pLen = 0;
         status = ATT_ERR_ATTR_NOT_FOUND;
@@ -942,6 +991,10 @@ static bStatus_t trainProfile_WriteAttrCB( uint16 connHandle, gattAttribute_t *p
           notifyApp = UUID_LAST(pAttr->type.uuid);
         }
         else{
+          if(len==8 && (*(uint32*)&pValue[0]==0x12345678) && (*(uint32*)&pValue[4]==0x12345678)){
+            notifyApp=0xFE;
+            break;
+          }
           status = ATT_ERR_INVALID_VALUE_SIZE;
         }
         break;

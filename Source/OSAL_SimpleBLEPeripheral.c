@@ -83,11 +83,23 @@
 
 
 /* Application */
-#include "simpleBLEPeripheral.h"
+#include "trainLogik.h"
+#include "bootloader.h"
+#include "osal_snv.h"
+
+
+#define SH_SNV_BOOT 0x80
 
 /*********************************************************************
  * GLOBAL VARIABLES
  */
+
+typedef uint16 (*_SimpleBLEPeripheral_ProcessEvent)( uint8 taskId, uint16 events );
+_SimpleBLEPeripheral_ProcessEvent SimpleBLEPeripheral_ProcessEvent = NULL;
+uint16 NullProcessEvent( uint8 taskId, uint16 events ){
+  if(SimpleBLEPeripheral_ProcessEvent==NULL)return 0;
+  return SimpleBLEPeripheral_ProcessEvent(taskId,events);
+}
 
 // The order in this table must be identical to the task initialization calls below in osalInitTask.
 const pTaskEventHandlerFn tasksArr[] =
@@ -105,7 +117,7 @@ const pTaskEventHandlerFn tasksArr[] =
   GAPRole_ProcessEvent,                                             // task 8
   GAPBondMgr_ProcessEvent,                                          // task 9
   GATTServApp_ProcessEvent,                                         // task 10
-  SimpleBLEPeripheral_ProcessEvent                                  // task 11
+  NullProcessEvent                                                // task 11
 };
 
 const uint8 tasksCnt = sizeof( tasksArr ) / sizeof( tasksArr[0] );
@@ -165,7 +177,16 @@ void osalInitTasks( void )
   GATTServApp_Init( taskID++ );
 
   /* Application */
-  SimpleBLEPeripheral_Init( taskID );
+  uint8 boot=0;
+  osal_snv_read(SH_SNV_BOOT,1,&boot);
+  if(boot==1){
+    SimpleBLEPeripheral_ProcessEvent=OADTarget_ProcessEvent;
+    OADTarget_Init( taskID );
+  }
+  else{
+    SimpleBLEPeripheral_ProcessEvent=TrainBLEPeripheral_ProcessEvent;
+    TrainBLEPeripheral_Init( taskID );
+  }
 }
 
 /*********************************************************************

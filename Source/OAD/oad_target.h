@@ -1,16 +1,15 @@
 /******************************************************************************
 
- @file  simpleBLEPeripheral.h
+ @file  oad_target.h
 
- @brief This file contains the Simple BLE Peripheral sample application
-        definitions and prototypes.
+ @brief This file contains OAD Target header file.
 
  Group: WCS, BTS
  Target Device: CC2540, CC2541
 
  ******************************************************************************
  
- Copyright (c) 2010-2016, Texas Instruments Incorporated
+ Copyright (c) 2012-2016, Texas Instruments Incorporated
  All rights reserved.
 
  IMPORTANT: Your use of this Software is limited to those specific rights
@@ -45,9 +44,8 @@
  Release Name: ble_sdk_1.4.2.2
  Release Date: 2016-06-09 06:57:10
  *****************************************************************************/
-
-#ifndef SIMPLEBLEPERIPHERAL_H
-#define SIMPLEBLEPERIPHERAL_H
+#ifndef OAD_TARGET_H
+#define OAD_TARGET_H
 
 #ifdef __cplusplus
 extern "C"
@@ -58,49 +56,34 @@ extern "C"
  * INCLUDES
  */
 
+#include "hal_aes.h"
+#include "hal_types.h"
+
 /*********************************************************************
  * CONSTANTS
  */
 
-// Simple BLE Peripheral Task Events
-#define SBP_START_DEVICE_EVT                              0x0001
-#define SBP_PERIODIC_EVT                                  0x0002
-
-  
-//SNV storage ids
-#define SH_SNV_RESP 0x80
-#define SH_SNV_PASS 0xA0
-#define SH_SNV_TRAIN_DEF_CONF 0xA4
-  
-  
-  
-// PORT CONFIGS
-//PWM
-#define PORT_PWM_MOTOR   P1_0 //P1.0 - CH2 - MOTOR
-#define PORT_PWM_LED     P1_1 //P1.1 - CH1 - LED
-//ADC Config
-#define PORT_ADC_WALL    HAL_ADC_CHN_AIN6 //P0.6 - ADC 1
-#define PORT_ADC_GROUND  HAL_ADC_CHN_AIN7 //P0.7 - ADC 2
-// GPIO Config
-#define PORT_GPIO_WALL   P1_2 //P1.2 - LED1 - output
-#define PORT_GPIO_GROUND P1_3 //P1.3 - LED2 - output
 /*********************************************************************
  * MACROS
  */
 
 /*********************************************************************
- * FUNCTIONS
+ * GLOBAL VARIABLES
  */
 
-/*
- * Task Initialization for the BLE Application
+/*********************************************************************
+ * TYPEDEFS
  */
-extern void SimpleBLEPeripheral_Init( uint8 task_id );
 
-/*
- * Task Event Processor for the BLE Application
+/*********************************************************************
+ * @fn      OADTarget_AddService
+ *
+ * @brief   Initializes the OAD Service by registering GATT attributes
+ *          with the GATT server. Only call this function once.
+ *
+ * @return  Success or Failure
  */
-extern uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events );
+bStatus_t OADTarget_AddService( void );
 
 /*********************************************************************
 *********************************************************************/
@@ -109,4 +92,4 @@ extern uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events );
 }
 #endif
 
-#endif /* SIMPLEBLEPERIPHERAL_H */
+#endif /* OAD_TARGET_H */

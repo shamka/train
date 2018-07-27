@@ -64,17 +64,14 @@
 #include "gapgattserver.h"
 #include "gattservapp.h"
 
-#include "trainGATTprofile.h"
+#include "oad_target.h"
+#include "oad.h"
 
 #include "peripheral.h"
 
 #include "gapbondmgr.h"
 
-#include "simpleBLEPeripheral.h"
-
-#ifdef SHAMKA_UART_DEBUG
-#include "hal_uart.h"
-#endif
+#include "bootloader.h"
 
 #include "osal_snv.h"
 #include "hal_timer.h"
@@ -90,7 +87,7 @@
  */
 
 // How often to perform periodic event
-#define SBP_PERIODIC_EVT_PERIOD                   80
+#define SBP_PERIODIC_EVT_PERIOD                   500
 
 // What is the advertising interval when device is discoverable (units of 625us, 160=100ms)
 #define DEFAULT_ADVERTISING_INTERVAL          (uint16)(1000/0.625)
@@ -145,32 +142,18 @@
 /*********************************************************************
  * LOCAL VARIABLES
  */
-void initTrain(void);
+void initOADTarget(void);
 
-#ifdef SHAMKA_UART_DEBUG
-uint8 buffrx[10];
-uint8 bufftx[64];
-static CONST halUARTBufControl_t txBuff={0,0,64,bufftx};
-static CONST halUARTBufControl_t rxBuff={0,0,10,buffrx};
-halUARTCfg_t uart_conf;
-static CONST char hello[]="\r\nShamka's Train Version 1.00\r\n";
-#endif
-
-//static CONST uint8 locNameDef[]={0x0F,GAP_ADTYPE_LOCAL_NAME_COMPLETE,'S','h','a','m','k','a','\'','s',' ','T','r','a','i','n',};
 static CONST uint8 locNameDef[]={0x09,GAP_ADTYPE_LOCAL_NAME_COMPLETE, 0xD9, 0x82, 0xD8, 0xB7, 0xD8, 0xA7, 0xD8, 0xB1};
-uint8 temp[32];
 
-static uint8 simpleBLEPeripheral_TaskID;   // Task ID for internal task/event processing
+static uint8 OADTarget_TaskID;   // Task ID for internal task/event processing
 
 static gaprole_States_t gapProfileState = GAPROLE_INIT;
 
 
-// GAP - SCAN RSP data (max size = 31 bytes)
-uint8 scanRspData[31];
-
 // GAP - Advertisement data (max size = 31 bytes, though this is
 // best kept short to conserve power while advertisting)
-static CONST uint8 advertData[] =
+CONST uint8 advertData[17] =
 {
   // Flags; this sets the device to use limited discoverable
   // mode (advertises for 30 seconds at a time) instead of general
@@ -208,51 +191,29 @@ static CONST uint8 advertData[] =
 /*********************************************************************
  * LOCAL FUNCTIONS
  */
-static void simpleBLEPeripheral_ProcessOSALMsg( osal_event_hdr_t *pMsg );
-static void simpleBLEPeripheral_ProcessGATTMsg( gattMsgEvent_t *pMsg );
+static void OADTarget_ProcessOSALMsg( osal_event_hdr_t *pMsg );
+static void OADTarget_ProcessGATTMsg( gattMsgEvent_t *pMsg );
 static void peripheralStateNotificationCB( gaprole_States_t newState );
 static void performPeriodicTask( void );
-static void trainProfileChangeCB( uint8 paramID );
-
-#ifdef SHAMKA_UART_DEBUG
-static void HalUARTCback (uint8 port, uint8 event){
-port++;
-};
-#endif
-
-static float getVolt(uint16 adc){
-  return ((adc*1.20)/511)*3;//sprintf((char *)temp,"Voltage: %#5.4f",volt);
-}
-static uint8 getPerc(float volt){
-  if(volt>=3.0)return 100;
-  if(volt<=2.0)return 0;
-  volt-=2.0;
-  return (uint8)(volt*100);
-}
 
 /*********************************************************************
  * PROFILE CALLBACKS
  */
 
 // GAP Role Callbacks
-static gapRolesCBs_t simpleBLEPeripheral_PeripheralCBs =
+static gapRolesCBs_t OADTarget_PeripheralCBs =
 {
   peripheralStateNotificationCB,  // Profile State Change Callbacks
   NULL                            // When a valid RSSI is read from controller (not used by application)
 };
 
 // GAP Bond Manager Callbacks
-static gapBondCBs_t simpleBLEPeripheral_BondMgrCBs =
+static gapBondCBs_t OADTarget_BondMgrCBs =
 {
   NULL,                     // Passcode callback (not used by application)
   NULL                      // Pairing / Bonding state Callback (not used by application)
 };
 
-// Simple GATT Profile Callbacks
-static trainProfileCBs_t simpleBLEPeripheral_TrainProfileCBs =
-{
-  trainProfileChangeCB    // Charactersitic value change callback
-};
 /*********************************************************************
  * PUBLIC FUNCTIONS
  */
@@ -271,20 +232,9 @@ static trainProfileCBs_t simpleBLEPeripheral_TrainProfileCBs =
  *
  * @return  none
  */
-void SimpleBLEPeripheral_Init( uint8 task_id )
+void OADTarget_Init( uint8 task_id )
 {
-  osal_snv_read(SH_SNV_RESP,31,scanRspData);
-  
-#ifdef SHAMKA_UART_DEBUG
-  osal_memset(&uart_conf,0,sizeof(uart_conf));
-  uart_conf.baudRate=HAL_UART_BR_115200;
-  uart_conf.rx=rxBuff;
-  uart_conf.tx=txBuff;
-  uart_conf.callBackFunc=HalUARTCback;
-  HalUARTOpen(HAL_UART_PORT_0,&uart_conf);
-#endif
-  
-  simpleBLEPeripheral_TaskID = task_id;
+  OADTarget_TaskID = task_id;
 
   // Setup the GAP
   VOID GAP_SetParamValue( TGAP_CONN_PAUSE_PERIPHERAL, DEFAULT_CONN_PAUSE_PERIPHERAL );
@@ -309,10 +259,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     GAPRole_SetParameter( GAPROLE_ADVERT_ENABLED, sizeof( uint8 ), &initial_advertising_enable );
     GAPRole_SetParameter( GAPROLE_ADVERT_OFF_TIME, sizeof( uint16 ), &gapRole_AdvertOffTime );
 
-    if(scanRspData[0]!=0xFF){
-      if(scanRspData[0]>0){GAPRole_SetParameter( GAPROLE_SCAN_RSP_DATA, 1+scanRspData[0], (void*)scanRspData );}
-      else{GAPRole_SetParameter( GAPROLE_SCAN_RSP_DATA, sizeof(locNameDef), (void*)locNameDef );}
-    }
+    GAPRole_SetParameter( GAPROLE_SCAN_RSP_DATA, sizeof(locNameDef), (void*)locNameDef );
     GAPRole_SetParameter( GAPROLE_ADVERT_DATA, sizeof( advertData ), (void*)advertData );
 
     GAPRole_SetParameter( GAPROLE_PARAM_UPDATE_ENABLE, sizeof( uint8 ), &enable_update_request );
@@ -346,11 +293,11 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
     GAPBondMgr_SetParameter( GAPBOND_IO_CAPABILITIES, sizeof ( uint8 ), &ioCap );
     GAPBondMgr_SetParameter( GAPBOND_BONDING_ENABLED, sizeof ( uint8 ), &bonding );
   }
-  TrainProfile_AddService( GATT_ALL_SERVICES );
+  OADTarget_AddService();
   // Setup the TrainProfile Characteristic Values
-  initTrain();
+  //initOADTarget();
   // Register callback with SimpleGATTprofile
-  VOID TrainProfile_RegisterAppCBs( &simpleBLEPeripheral_TrainProfileCBs );
+  //VOID OADTarget_RegisterAppCBs( &OADTarget_TrainProfileCBs );
 
   // Enable clock divide on halt
   // This reduces active current while radio is active and CC254x MCU
@@ -358,7 +305,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
   HCI_EXT_ClkDivOnHaltCmd( HCI_EXT_ENABLE_CLK_DIVIDE_ON_HALT );
 
   // Setup a delayed profile startup
-  osal_set_event( simpleBLEPeripheral_TaskID, SBP_START_DEVICE_EVT );
+  osal_set_event( OADTarget_TaskID, SBP_START_DEVICE_EVT );
   
 
 }
@@ -376,7 +323,7 @@ void SimpleBLEPeripheral_Init( uint8 task_id )
  *
  * @return  events not processed
  */
-uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
+uint16 OADTarget_ProcessEvent( uint8 task_id, uint16 events )
 {
 
   VOID task_id; // OSAL required parameter that isn't used in this function
@@ -385,9 +332,9 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
   {
     uint8 *pMsg;
 
-    if ( (pMsg = osal_msg_receive( simpleBLEPeripheral_TaskID )) != NULL )
+    if ( (pMsg = osal_msg_receive( OADTarget_TaskID )) != NULL )
     {
-      simpleBLEPeripheral_ProcessOSALMsg( (osal_event_hdr_t *)pMsg );
+      OADTarget_ProcessOSALMsg( (osal_event_hdr_t *)pMsg );
 
       // Release the OSAL message
       VOID osal_msg_deallocate( pMsg );
@@ -400,13 +347,13 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
   if ( events & SBP_START_DEVICE_EVT )
   {
     // Start the Device
-    VOID GAPRole_StartDevice( &simpleBLEPeripheral_PeripheralCBs );
+    VOID GAPRole_StartDevice( &OADTarget_PeripheralCBs );
 
     // Start Bond Manager
-    VOID GAPBondMgr_Register( &simpleBLEPeripheral_BondMgrCBs );
+    VOID GAPBondMgr_Register( &OADTarget_BondMgrCBs );
 
     // Set timer for first periodic event
-    osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
+    osal_start_timerEx( OADTarget_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
     
 #ifdef SHAMKA_UART_DEBUG
   HalUARTWrite(HAL_UART_PORT_0,(uint8*)hello,sizeof(hello));
@@ -420,7 +367,7 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
     // Restart timer
     if ( SBP_PERIODIC_EVT_PERIOD )
     {
-      osal_start_timerEx( simpleBLEPeripheral_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
+      osal_start_timerEx( OADTarget_TaskID, SBP_PERIODIC_EVT, SBP_PERIODIC_EVT_PERIOD );
     }
 
     // Perform periodic application task
@@ -442,13 +389,13 @@ uint16 SimpleBLEPeripheral_ProcessEvent( uint8 task_id, uint16 events )
  *
  * @return  none
  */
-static void simpleBLEPeripheral_ProcessOSALMsg( osal_event_hdr_t *pMsg )
+static void OADTarget_ProcessOSALMsg( osal_event_hdr_t *pMsg )
 {
   switch ( pMsg->event )
   {     
     case GATT_MSG_EVENT:
       // Process GATT message
-      simpleBLEPeripheral_ProcessGATTMsg( (gattMsgEvent_t *)pMsg );
+      OADTarget_ProcessGATTMsg( (gattMsgEvent_t *)pMsg );
       break;
       
     default:
@@ -464,7 +411,7 @@ static void simpleBLEPeripheral_ProcessOSALMsg( osal_event_hdr_t *pMsg )
  *
  * @return  none
  */
-static void simpleBLEPeripheral_ProcessGATTMsg( gattMsgEvent_t *pMsg )
+static void OADTarget_ProcessGATTMsg( gattMsgEvent_t *pMsg )
 {  
   GATT_bm_free( &pMsg->msg, pMsg->method );
 }
@@ -482,21 +429,19 @@ static void simpleBLEPeripheral_ProcessGATTMsg( gattMsgEvent_t *pMsg )
 #ifdef PLUS_BROADCASTER
 static uint8 first_conn_flag = 0;
 #endif // PLUS_BROADCASTER
-uint8 curState;
 static void peripheralStateNotificationCB( gaprole_States_t newState )
 {
-  curState=newState;
   switch ( newState )
   {
     case GAPROLE_STARTED:
       {
-printText("state GAPROLE_STARTED\r\n");
+        
       }
       break;
 
     case GAPROLE_ADVERTISING:
       {
-         printText("state GAPROLE_ADVERTISING\r\n");
+
       }
       break;
 
@@ -522,7 +467,7 @@ printText("state GAPROLE_STARTED\r\n");
       
     case GAPROLE_CONNECTED:
       {        
-          printText("state GAPROLE_CONNECTED\r\n");
+
 #ifdef PLUS_BROADCASTER
         // Only turn advertising on for this state when we first connect
         // otherwise, when we go from connected_advertising back to this state
@@ -550,12 +495,12 @@ printText("state GAPROLE_STARTED\r\n");
 
     case GAPROLE_CONNECTED_ADV:
       {
-printText("state GAPROLE_CONNECTED_ADV\r\n");
+
       }
       break;      
     case GAPROLE_WAITING:
       {
-          printText("state GAPROLE_WAITING\r\n");
+
 #ifdef PLUS_BROADCASTER                
         uint8 advertEnabled = TRUE;
       
@@ -568,7 +513,7 @@ printText("state GAPROLE_CONNECTED_ADV\r\n");
 
     case GAPROLE_WAITING_AFTER_TIMEOUT:
       {
-         printText("state GAPROLE_WAITING_AFTER_TIMEOUT\r\n"); 
+
 #ifdef PLUS_BROADCASTER
         // Reset flag for next connection.
         first_conn_flag = 0;
@@ -578,13 +523,13 @@ printText("state GAPROLE_CONNECTED_ADV\r\n");
 
     case GAPROLE_ERROR:
       {
-printText("state GAPROLE_ERROR\r\n"); 
+
       }
       break;
 
     default:
       {
-printText("state default\r\n"); 
+
       }
       break;
 
@@ -597,11 +542,7 @@ printText("state default\r\n");
 }
 
 
-
-
-/***************************************************************************
-
-                              TRAIN LOGIC BLOCK
-
-****************************************************************************/
-#include "logicBlock.h"
+static void performPeriodicTask( void ) //80ms - 125ticks for 10sec
+{
+  
+}

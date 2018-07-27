@@ -38,7 +38,7 @@ void setMotor(uint16 cur_pwm, bool bt){
 void setLed(uint16 cur_pwm, bool bt){
   if(bt && cur_pwm!=0){
 // led limities    
-    if(cur_pwm>trainProfileCONFIG_value.maxLed){cur_pwm=trainProfileCONFIG_value.maxLed;};
+    if(trainProfileCONFIG_value.maxLed>0 && cur_pwm>trainProfileCONFIG_value.maxLed){cur_pwm=trainProfileCONFIG_value.maxLed;};
   }
   halTimer1SetChannelDuty(1,cur_pwm);
 };
@@ -129,6 +129,12 @@ static void trainProfileChangeCB( uint8 paramID )
     if(trainProfileCONFIG_value.adc1_max==0)TrainProfile_SetParameter(U_PROXADC1, 2,&trainProfileCONFIG_value.adc1_max);
     if(trainProfileCONFIG_value.adc2==0)TrainProfile_SetParameter(U_PROXADC2, 2,&trainProfileCONFIG_value.adc2);
     break;
+  case 0xFE:{
+    temp[0]=1;
+    osal_snv_write(SH_SNV_BOOT,1,temp);
+    Onboard_soft_reset();
+    break;
+  }
 
   default:
     // should not reach here!

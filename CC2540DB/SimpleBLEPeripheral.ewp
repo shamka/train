@@ -279,7 +279,7 @@
                 </option>
                 <option>
                     <name>OGChipConfigPath</name>
-                    <state>C:\Program Files (x86)\IAR Systems\Embedded Workbench 8.0\8051\bin\..\config\devices\Texas Instruments\CC25xx\4x\CC2540F256.i51</state>
+                    <state>C:\TI\Embedded Workbench 8.0\8051\bin\..\config\devices\Texas Instruments\CC25xx\4x\CC2540F256.i51</state>
                 </option>
             </data>
         </settings>
@@ -482,10 +482,12 @@
                 <option>
                     <name>CCIncludePath2</name>
                     <state>$PROJ_DIR$\..\Source</state>
+                    <state>$PROJ_DIR$\..\Source\CC2540</state>
+                    <state>$PROJ_DIR$\..\Source\TRAIN</state>
+                    <state>$PROJ_DIR$\..\Source\OAD</state>
                     <state>$PROJ_DIR$\..\..\common</state>
                     <state>$PROJ_DIR$\..\..\include</state>
                     <state>$PROJ_DIR$\..\..\..\..\Components\hal\include</state>
-                    <state>$PROJ_DIR$\..\Source\CC2540</state>
                     <state>$PROJ_DIR$\..\..\..\..\Components\osal\include</state>
                     <state>$PROJ_DIR$\..\..\..\..\Components\services\saddr</state>
                     <state>$PROJ_DIR$\..\..\..\..\Components\ble\include</state>
@@ -811,7 +813,7 @@
                 </option>
                 <option>
                     <name>SegmentMap</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>ListSymbols</name>
@@ -939,11 +941,11 @@
                 </option>
                 <option>
                     <name>IncludeSuppressed</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>ModuleSummary</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>xcProgramEntryLabel</name>
@@ -997,7 +999,7 @@
                 </option>
                 <option>
                     <name>ListOutputFormat</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>BufferedTermOutput</name>
@@ -1005,7 +1007,7 @@
                 </option>
                 <option>
                     <name>OverlaySystemMap</name>
-                    <state>0</state>
+                    <state>1</state>
                 </option>
                 <option>
                     <name>RawBinaryFile</name>
@@ -2283,19 +2285,25 @@
     <group>
         <name>APP</name>
         <file>
-            <name>$PROJ_DIR$\..\Source\logicBlock.h</name>
+            <name>$PROJ_DIR$\..\Source\bootloader.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Source\bootloader.h</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Source\TRAIN\logicBlock.h</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\Source\OSAL_SimpleBLEPeripheral.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Source\simpleBLEPeripheral.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\Source\simpleBLEPeripheral.h</name>
-        </file>
-        <file>
             <name>$PROJ_DIR$\..\Source\SimpleBLEPeripheral_Main.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Source\TRAIN\trainLogik.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Source\TRAIN\trainLogik.h</name>
         </file>
     </group>
     <group>
@@ -2517,16 +2525,25 @@
             <name>$PROJ_DIR$\..\..\Profiles\GATT\gattservapp_util.c</name>
         </file>
         <file>
+            <name>$PROJ_DIR$\..\Source\OAD\oad.h</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Source\OAD\oad_target.c</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Source\OAD\oad_target.h</name>
+        </file>
+        <file>
             <name>$PROJ_DIR$\..\..\Profiles\Roles\CC254x\peripheral.c</name>
         </file>
         <file>
             <name>$PROJ_DIR$\..\..\Profiles\Roles\CC254x\peripheral.h</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Source\trainGATTprofile.c</name>
+            <name>$PROJ_DIR$\..\Source\TRAIN\trainGATTprofile.c</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\Source\trainGATTprofile.h</name>
+            <name>$PROJ_DIR$\..\Source\TRAIN\trainGATTprofile.h</name>
         </file>
     </group>
     <group>
@@ -2542,6 +2559,9 @@
         </file>
         <file>
             <name>$PROJ_DIR$\..\Source\OnBoard.h</name>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\..\Source\linker\ti_51ew_cc2540b.xcl</name>
         </file>
     </group>
 </project>
