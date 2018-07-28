@@ -127,7 +127,7 @@ CONST uint8 trainProfileBATT_VOLT_access = GATT_PROP_READ|GATT_PROP_INDICATE;
 static float trainProfileBATT_VOLT_value = 0;
 static gattCharCfg_t *trainProfile_BATT_VOLT_conns=0;
 // BATTARY ADC
-static uint16 trainProfileBATT_ADC_value = 0;
+uint16 trainProfileBATT_ADC_value = 0;
 #ifdef BATT_ADC
 CONST uint8 trainProfile_BATT_ADC_UUID[] ={TRAINPROFILE_BATT_ADC_UUID};
 CONST uint8 trainProfileBATT_ADC_access = GATT_PROP_READ|GATT_PROP_INDICATE;

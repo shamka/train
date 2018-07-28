@@ -5,7 +5,7 @@
 ****************************************************************************/
 
 
-static uint8 battary_update = 255;
+static uint16 battary_update = 60000;
 static uint8 prox_update = 255;
   
 // MOTOR PWM
@@ -22,6 +22,8 @@ extern S_DEFAULT_CONFIG trainProfileDEF_CONFIG_value;
 extern int16 trainProfilePROXADC1_value;
 // ADC 2 - Ground proximity
 extern int16 trainProfilePROXADC2_value;
+// BATTARY ADC
+extern uint16 trainProfileBATT_ADC_value;
 
 void setMotor(uint16 cur_pwm, bool bt){
   if(cur_pwm==13){
@@ -33,7 +35,8 @@ void setMotor(uint16 cur_pwm, bool bt){
     else if(trainProfileCONFIG_value.maxMotor>0 && cur_pwm>trainProfileCONFIG_value.maxMotor){cur_pwm=trainProfileCONFIG_value.maxMotor;};
   }
   halTimer1SetChannelDuty(2,cur_pwm);
-  TrainProfile_SetParameter(U_MOTOR_CURRENT,2,&cur_pwm);
+  if(trainProfileMOTOR_CURRENT_value!=cur_pwm)
+    TrainProfile_SetParameter(U_MOTOR_CURRENT,2,&cur_pwm);
 };
 void setLed(uint16 cur_pwm, bool bt){
   if(bt && cur_pwm!=0){
@@ -46,7 +49,7 @@ void setLed(uint16 cur_pwm, bool bt){
 
 
 
-static void performPeriodicTask( void ) //80ms - 125ticks for 10sec
+static void performPeriodicTask( void ) //40ms - 250ticks for 10sec
 {
   // PROXIMITY UPDATE
   if( trainProfileCONFIG_value.adc1_max!=0 || trainProfileCONFIG_value.adc2!=0 ){
@@ -80,18 +83,20 @@ static void performPeriodicTask( void ) //80ms - 125ticks for 10sec
     }
   }
   // BATTERY UPDATE 
-  if(battary_update>250){// Update battary level every 20 seconds
+  if(battary_update>500){// Update battary level every 20 seconds
     battary_update=0;
     HalAdcSetReference( HAL_ADC_REF_125V ); //1.20V
     
     *(uint16*)temp=HalAdcRead( HAL_ADC_CHANNEL_VDD, HAL_ADC_RESOLUTION_10 );
-    TrainProfile_SetParameter(U_BATT_ADC, 2,&temp);
-    
-    *(float*)&temp[4]=getVolt(*(uint16*)temp);
-    TrainProfile_SetParameter(U_BATT_VOLT, sizeof(float),&temp[4]);
-    
-    temp[0]=getPerc(*(float*)&temp[4]);
-    TrainProfile_SetParameter(U_BATT, 1,&temp);
+    if(*(uint16*)temp!=trainProfileBATT_ADC_value){
+      TrainProfile_SetParameter(U_BATT_ADC, 2,&temp);
+      
+      *(float*)&temp[4]=getVolt(*(uint16*)temp);
+      TrainProfile_SetParameter(U_BATT_VOLT, sizeof(float),&temp[4]);
+      
+      temp[0]=getPerc(*(float*)&temp[4]);
+      TrainProfile_SetParameter(U_BATT, 1,&temp);
+    }
   } else battary_update++;
 }
 static void trainProfileChangeCB( uint8 paramID )
@@ -128,6 +133,8 @@ static void trainProfileChangeCB( uint8 paramID )
   case U_CONFIG:
     if(trainProfileCONFIG_value.adc1_max==0)TrainProfile_SetParameter(U_PROXADC1, 2,&trainProfileCONFIG_value.adc1_max);
     if(trainProfileCONFIG_value.adc2==0)TrainProfile_SetParameter(U_PROXADC2, 2,&trainProfileCONFIG_value.adc2);
+    setMotor(trainProfileMOTOR_PWM_value,true);
+    setLed(trainProfileLED_PWM_value,true);
     break;
   case 0xFE:{
     temp[0]=1;
